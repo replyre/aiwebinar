@@ -347,7 +347,13 @@ button { font: inherit; color: inherit; }
   display: flex; align-items: center; flex: 1 1 auto;
   justify-content: space-between; gap: clamp(1rem, 2vw, 2rem);
 }
-.nav-list { display: flex; align-items: center; gap: clamp(.5rem, 1.3vw, 1.35rem); }
+/* flex:1 + center puts the links in the middle of the space between the
+   brand and the CTA, rather than hard against the logo. */
+.nav-list {
+  display: flex; align-items: center; justify-content: center;
+  flex: 1 1 auto;
+  gap: clamp(.5rem, 1.3vw, 1.35rem);
+}
 .nav-list a {
   position: relative; display: inline-block; padding: .4rem 0;
   color: var(--text-muted); font-size: .9rem; font-weight: 500; white-space: nowrap;
@@ -1204,6 +1210,151 @@ button { font: inherit; color: inherit; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: scale(.97); } }
 body.is-locked { overflow: hidden; }
+
+/* --------------------------- Invitation modal -------------------------- */
+.promo {
+  position: fixed; inset: 0; z-index: 320;
+  display: grid; place-items: center;
+  padding: var(--gutter);
+}
+.promo__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(11, 31, 56, .78);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: fade .2s var(--ease);
+}
+.promo__panel {
+  position: relative;
+  display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+  align-items: stretch;
+  width: min(1020px, 100%);
+  max-height: min(90dvh, 40rem);
+  overflow: hidden; overscroll-behavior: contain;
+  border-radius: var(--r-xl);
+  background: var(--bg);
+  box-shadow: var(--shadow-lg);
+  animation: pop .32s var(--ease);
+}
+.promo__close {
+  position: absolute; top: .9rem; right: .9rem; z-index: 2;
+  width: 38px; height: 38px; display: grid; place-items: center;
+  padding: 0; background: var(--bg); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 50%;
+  cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: color .18s var(--ease), background .18s var(--ease);
+}
+.promo__close:hover { color: var(--text); background: var(--bg-tint); }
+.promo__close .icon { width: 1.05rem; height: 1.05rem; }
+
+/* Left column — context, mirrors the .contact__aside treatment. Scrolls on
+   its own if the viewport is short, so the panel itself never overflows. */
+.promo__aside {
+  display: flex; flex-direction: column;
+  padding: clamp(1.5rem, 2.4vw, 2.1rem);
+  overflow: auto; overscroll-behavior: contain;
+  color: #fff;
+  background:
+    radial-gradient(26rem 18rem at 110% -10%, rgba(37, 99, 235, .38), transparent 62%),
+    radial-gradient(20rem 16rem at -10% 110%, rgba(111, 163, 224, .22), transparent 66%),
+    var(--navy-900);
+}
+.promo__aside .eyebrow { margin-bottom: .55rem; }
+.promo__title {
+  font-family: var(--font-head); font-weight: 700;
+  font-size: clamp(1.35rem, 2vw, 1.7rem); line-height: 1.16;
+  letter-spacing: -.022em; margin-bottom: .6rem; color: #fff;
+}
+.promo__lede { font-size: .875rem; line-height: 1.55; color: var(--on-dark-muted); margin-bottom: var(--sp-5); }
+
+/* Icon-led rows: name + who, matching the programs section's track cards. */
+.promo__list {
+  display: grid; gap: .55rem; margin: 0 0 var(--sp-5); padding: 0; list-style: none;
+}
+.promo__list li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  align-items: center; gap: .7rem;
+  padding: .6rem .75rem;
+  border: 1px solid var(--border-dark);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .045);
+}
+.promo__ico {
+  display: grid; place-items: center;
+  width: 32px; height: 32px; flex: none;
+  border: 1px solid var(--border-dark-2); border-radius: 9px;
+  background: rgba(255, 255, 255, .07);
+}
+.promo__ico .icon { width: 1rem; height: 1rem; color: var(--navy-300); }
+.promo__k {
+  font-family: var(--font-head); font-weight: 700;
+  font-size: .875rem; line-height: 1.25; color: #fff; margin: 0;
+}
+.promo__v { font-size: .78rem; color: var(--on-dark-muted); margin: .1rem 0 0; }
+
+.promo__stats {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem; margin: 0 0 var(--sp-5);
+  padding-top: var(--sp-4); border-top: 1px solid var(--border-dark);
+}
+.promo__stats dt { font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; color: var(--navy-300); }
+.promo__stats dd {
+  margin: .2rem 0 0; font-family: var(--font-head); font-weight: 700;
+  font-size: .82rem; line-height: 1.3; color: #fff;
+}
+
+.promo__meta {
+  display: flex; align-items: center; gap: .5rem;
+  margin: auto 0 0; padding-top: var(--sp-4);
+  border-top: 1px solid var(--border-dark);
+  font-size: .78rem; color: var(--on-dark-muted);
+}
+.promo__meta .icon { width: .95rem; height: .95rem; flex: none; color: var(--navy-300); }
+
+/* Right column — form + proposal download. */
+.promo__main {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: clamp(1.5rem, 2.4vw, 2.1rem);
+  overflow: auto; overscroll-behavior: contain;
+}
+/* The modal panel already provides the frame the standalone form draws itself. */
+.form--compact {
+  padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+}
+.form--compact .form__title { font-size: 1.2rem; margin-bottom: .25rem; }
+.form--compact .form__sub { font-size: .84rem; margin-bottom: var(--sp-4); }
+/* Own the rhythm with top margins instead of .field's bottom margin, so the
+   last field does not leave a gap above the button. */
+.form--compact .field { margin-bottom: 0; }
+.form--compact .field + .field,
+.form--compact .field + .form__row,
+.form--compact .form__row + .field { margin-top: .7rem; }
+.form--compact .form__row { gap: .7rem; }
+.form--compact .field > label { font-size: .8rem; margin-bottom: .28rem; }
+.form--compact .field input { padding: .58rem .8rem; font-size: .9rem; border-radius: 10px; }
+.form--compact .btn[type="submit"] { --py: .68rem; margin-top: var(--sp-4); }
+.form--compact .form__status { margin-top: .7rem; padding: .6rem .8rem; font-size: .84rem; }
+
+.promo__proposal {
+  --py: .68rem;
+  margin-top: .7rem;
+  border: 1px solid var(--border-mid); color: var(--text); font-size: .88rem;
+}
+
+@media (max-width: 860px) {
+  .promo__panel {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 92dvh; overflow: auto;
+  }
+  /* Form first on small screens — the context is supporting material there. */
+  .promo__aside { order: 2; overflow: visible; }
+  .promo__main  { order: 1; overflow: visible; padding-top: clamp(2.5rem, 9vw, 3.25rem); }
+  .promo__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+  .promo__meta { margin-top: var(--sp-4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo__backdrop, .promo__panel { animation: none; }
+}
 
 /* --------------------------------- FAQ --------------------------------- */
 .faq { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 0 clamp(2rem, 4vw, 3.5rem); align-items: start; }

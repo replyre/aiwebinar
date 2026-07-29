@@ -25,6 +25,11 @@
   var CONTACT_EMAIL = 'support@innovgeist.com';
   var CONTACT_CC = 'replyrgupta@gmail.com';
 
+  /* Invitation modal: delay before it opens, and the sessionStorage key that
+     stops it reappearing once seen or dismissed this session. */
+  var PROMO_DELAY = 5000;
+  var PROMO_KEY = 'ig_promo_seen';
+
   /* Must match the mobile-navigation breakpoint in styles.css. */
   var MOBILE_NAV_MAX = 1120;
 
@@ -455,11 +460,107 @@
     });
   }
 
-  /* ============================ Contact form ============================ */
-  function initForm() {
-    var form = $('[data-contact-form]');
-    if (!form) return;
+  /* =========================== Invitation modal ========================= */
+  function initPromo() {
+    var promo = $('[data-promo]');
+    if (!promo) return;
 
+    var panel = $('.promo__panel', promo);
+    var closeBtn = $('.promo__close', promo);
+    var timer = null;
+    var lastFocused = null;
+
+    /* sessionStorage, not localStorage: the invitation should come back on a
+       genuine return visit, just not on every in-session page view. */
+    function seen() {
+      try { return sessionStorage.getItem(PROMO_KEY) === '1'; }
+      catch (err) { return false; }   // private mode / storage disabled
+    }
+
+    function remember() {
+      try { sessionStorage.setItem(PROMO_KEY, '1'); } catch (err) { /* no-op */ }
+    }
+
+    function focusables() {
+      return $$('a[href], button:not([disabled]), input, select, textarea', panel)
+        .filter(function (el) {
+          return el.offsetWidth || el.offsetHeight || el === document.activeElement;
+        });
+    }
+
+    function open() {
+      if (!promo.hidden) return;
+      promo.hidden = false;
+      document.body.classList.add('is-locked');
+      lastFocused = document.activeElement;
+      remember();
+      // Focus the close button, not the first input — landing the caret in a
+      // text field on an unrequested modal is disorienting.
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function close() {
+      if (promo.hidden) return;
+      promo.hidden = true;
+      document.body.classList.remove('is-locked');
+      if (lastFocused && lastFocused.focus) lastFocused.focus();
+    }
+
+    function cancel() {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
+
+    promo.addEventListener('click', function (e) {
+      if (e.target.closest('[data-promo-close]')) close();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (promo.hidden) return;
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key !== 'Tab') return;
+
+      // Keep Tab inside the dialog while it is open.
+      var items = focusables();
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    });
+
+    // Don't interrupt someone who is already filling in the section form or
+    // reading the contact block — the invitation would be redundant there.
+    $$('[data-contact-form]').forEach(function (form) {
+      form.addEventListener('focusin', function () { cancel(); remember(); });
+    });
+
+    // Sent successfully from inside the modal — let the confirmation be read,
+    // then get out of the way.
+    promo.addEventListener('ig:submitted', function () {
+      setTimeout(close, 2600);
+    });
+
+    if (seen()) return;
+
+    timer = setTimeout(function () {
+      timer = null;
+      // Re-check: the visitor may have engaged with a form in the meantime.
+      if (seen()) return;
+      open();
+    }, PROMO_DELAY);
+  }
+
+  /* ============================ Contact form ============================ */
+  /* Wires every [data-contact-form] on the page — the section form and the
+     invitation modal's form share this logic. */
+  function initForm() {
+    $$('[data-contact-form]').forEach(initOneForm);
+  }
+
+  function initOneForm(form) {
     var status = $('[data-form-status]', form);
     var submit = $('button[type="submit"]', form);
     var submitLabel = submit ? submit.innerHTML : '';
@@ -525,6 +626,7 @@
         'Programs of interest': programs.length ? programs.join(', ') : '—',
         'Preferred timeframe': data.get('timeframe') || '—',
         'Message': data.get('message') || '—',
+        'Submitted from': data.get('source') || 'Contact section',
 
         _subject: 'AI Education Partnership enquiry — ' + institution,
         _template: 'table',
@@ -612,6 +714,8 @@
           }
           form.reset();
           setStatus('Thank you — your request has been sent. We reply within two working days.');
+          // Lets the invitation modal dismiss itself once the job is done.
+          form.dispatchEvent(new CustomEvent('ig:submitted', { bubbles: true }));
         })
         .catch(function () {
           setStatus(
@@ -645,6 +749,7 @@
     initFaq();
     initLightbox();
     initForm();
+    initPromo();
     initYear();
   }
 

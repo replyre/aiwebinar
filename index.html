@@ -137,7 +137,6 @@
         <li><a href="#faq">FAQ</a></li>
       </ul>
       <div class="header__nav-cta">
-        <a class="btn btn--ghost btn--sm" href="assets/docs/Innovgeist-AI-Education-Partnership-Proposal.pdf" download>Proposal</a>
         <a class="btn btn--primary btn--sm" href="#contact">Book a Discussion</a>
       </div>
     </nav>
@@ -1831,6 +1830,137 @@
     </button>
     <img class="lightbox__img" data-lightbox-img src="" alt="">
     <p class="lightbox__caption" data-lightbox-caption></p>
+  </div>
+</div>
+
+<!-- ========================= INVITATION MODAL =========================
+     Opens 5s after load, once per browser session. Dismissal is remembered
+     in sessionStorage, so it does not re-nag on in-session navigation.
+     ==================================================================== -->
+<div class="promo" data-promo hidden>
+  <div class="promo__backdrop" data-promo-close></div>
+
+  <div class="promo__panel" role="dialog" aria-modal="true" aria-labelledby="promo-title">
+    <button class="promo__close" type="button" data-promo-close aria-label="Close">
+      <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+
+    <!-- Left: context -->
+    <div class="promo__aside">
+      <p class="eyebrow eyebrow--onDark">Let&rsquo;s Begin</p>
+      <h2 class="promo__title" id="promo-title">Let&rsquo;s build an AI-ready institution together</h2>
+      <p class="promo__lede">
+        Empower your institution with practical AI literacy, responsible technology adoption
+        and future-ready learning &mdash; designed by professionals who build AI every day.
+      </p>
+
+      <ul class="promo__list">
+        <li>
+          <span class="promo__ico" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+          </span>
+          <div>
+            <p class="promo__k">AI for Students</p>
+            <p class="promo__v">Classes IX&ndash;XII &amp; Undergraduate</p>
+          </div>
+        </li>
+        <li>
+          <span class="promo__ico" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></svg>
+          </span>
+          <div>
+            <p class="promo__k">AI for Faculty</p>
+            <p class="promo__v">Educators &amp; Academic Staff</p>
+          </div>
+        </li>
+        <li>
+          <span class="promo__ico" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>
+          </span>
+          <div>
+            <p class="promo__k">AI for Graduate Students</p>
+            <p class="promo__v">Research &amp; Professional Development</p>
+          </div>
+        </li>
+        <li>
+          <span class="promo__ico" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+          </span>
+          <div>
+            <p class="promo__k">Institutional AI &amp; automation</p>
+            <p class="promo__v">Systems, workflows &amp; capability building</p>
+          </div>
+        </li>
+      </ul>
+
+      <dl class="promo__stats">
+        <div>
+          <dt>Duration</dt>
+          <dd>90 minutes</dd>
+        </div>
+        <div>
+          <dt>Language</dt>
+          <dd>English + Hindi</dd>
+        </div>
+        <div>
+          <dt>Mode</dt>
+          <dd>Offline &middot; Interactive</dd>
+        </div>
+      </dl>
+
+      <p class="promo__meta">
+        <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+        Now scheduling for the 2026&ndash;27 academic year
+      </p>
+    </div>
+
+    <!-- Right: form -->
+    <div class="promo__main">
+      <form class="form form--compact" data-contact-form novalidate>
+        <input class="form__honey" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input type="hidden" name="source" value="Invitation popup">
+
+        <h3 class="form__title">Book a discussion</h3>
+        <p class="form__sub">No commitment. We reply within two working days.</p>
+
+        <div class="field">
+          <label for="pm-institution">Institution <span aria-hidden="true">*</span></label>
+          <input id="pm-institution" name="institution" type="text" autocomplete="organization" required>
+          <p class="field__error" data-error-for="pm-institution" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="pm-name">Your name <span aria-hidden="true">*</span></label>
+          <input id="pm-name" name="name" type="text" autocomplete="name" required>
+          <p class="field__error" data-error-for="pm-name" hidden></p>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="pm-email">Email <span aria-hidden="true">*</span></label>
+            <input id="pm-email" name="email" type="email" autocomplete="email" required>
+            <p class="field__error" data-error-for="pm-email" hidden></p>
+          </div>
+          <div class="field">
+            <label for="pm-phone">Phone</label>
+            <input id="pm-phone" name="phone" type="tel" autocomplete="tel" placeholder="+91">
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--block" type="submit">
+          Send request
+          <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+
+        <p class="form__status" data-form-status role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <a class="btn btn--ghost btn--block promo__proposal"
+         href="assets/docs/Innovgeist-AI-Education-Partnership-Proposal.pdf" download>
+        <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+        Download the full proposal (PDF)
+      </a>
+    </div>
   </div>
 </div>
 
