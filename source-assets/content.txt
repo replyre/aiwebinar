@@ -1,0 +1,329 @@
+I think the simplest and most effective approach is to give your AI agent a single source of truth—not a long PRD, but a concise project brief that defines the design, structure, and content expectations without overcomplicating things.
+
+---
+
+AI Education Website – Website Brief
+
+Project Overview
+
+Design and develop a premium, responsive website for Innovgeist Technologies Private Limited showcasing its AI Education Partnership initiative.
+
+This website is not a workshop registration page or a coaching institute website.
+
+Its purpose is to establish Innovgeist as a trusted AI Software Company and Education Technology Partner that helps educational institutions prepare students, faculty, and graduate learners for the AI era through practical, responsible, and industry-led AI education.
+
+The website should reflect the quality of Microsoft Education, Google for Education, OpenAI, and Stripe.
+
+---
+
+Website Goal
+
+The website should help visitors:
+
+* Understand who Innovgeist is
+* Learn about AI education programs
+* Build trust in the company
+* View institutional experience
+* Learn about the trainer
+* Contact Innovgeist for workshops and partnerships
+
+Primary CTA:
+
+Book a Discussion
+
+Secondary CTA:
+
+Download Proposal
+
+---
+
+Brand Positioning
+
+Innovgeist is:
+
+* AI Software Company
+* Intelligent Automation Company
+* Education Technology Company
+* AI Education Partner
+* Future Skills Organization
+
+Innovgeist is not:
+
+* Coaching Institute
+* Tuition Center
+* Training Academy
+* Online Course Platform
+
+Every section should reinforce this positioning.
+
+---
+
+Design Style
+
+Inspired by:
+
+* Apple
+* OpenAI
+* Microsoft
+* Stripe
+* Notion
+
+Design Principles:
+
+* Minimal
+* Premium
+* Executive
+* Clean
+* Professional
+* Lots of whitespace
+* Consistent spacing
+* Modern typography
+* Subtle animations
+
+Avoid:
+
+* Bright education colors
+* Cartoon graphics
+* Stock classroom images
+* Crowded layouts
+* Heavy gradients
+* Marketing-style banners
+
+---
+
+Color Palette
+
+Primary Text: #111827
+
+Secondary Text: #6B7280
+
+Accent Blue: #2563EB
+
+Background: #FFFFFF
+
+Section Background: #F8FAFC
+
+Border: #E5E7EB
+
+Use blue sparingly.
+
+---
+
+Typography
+
+Headings:
+Poppins ExtraBold / Bold
+
+Body:
+Inter Regular
+
+Only two font families should be used throughout the website.
+
+---
+
+Icons
+
+* Lucide Icons
+* Outline style only
+* Consistent stroke width
+* Minimal usage
+
+---
+
+Website Structure
+
+Home
+
+Hero section introducing the AI Education Partnership.
+
+Why AI Education
+
+Explain why AI literacy matters and the challenges institutions face.
+
+Programs
+
+Introduce:
+
+* AI for Students
+* AI for Faculty
+* AI for Graduate Students
+
+Why Innovgeist
+
+Company credibility.
+
+Mention:
+
+* DPIIT Recognized Startup
+* AI Software Development
+* Intelligent Automation
+* Education Technology
+* Industry-led learning
+
+Mention the company's collaboration with educational institutions on accreditation documentation automation and academic workflow modernization without making unsupported claims.
+
+Meet the Trainer
+
+Atul Kumar Verma
+
+Director
+
+Innovgeist Technologies Pvt. Ltd.
+
+AI Engineer
+
+Automation Consultant
+
+Professional profile and experience.
+
+Gallery / Proof of Work
+
+Workshop photos
+
+Hackathon
+
+Institution visits
+
+Events
+
+FAQ
+
+Common institutional questions.
+
+Contact
+
+Contact form
+
+Phone
+
+Email
+
+Website
+
+Location
+
+QR Code
+
+---
+
+Hero Section
+
+Headline:
+
+AI Education Partnership
+
+Subheading:
+
+Preparing Students, Educators & Institutions for the AI Era.
+
+Description:
+
+Innovgeist Technologies Pvt. Ltd. helps educational institutions adopt Artificial Intelligence responsibly through practical training, AI literacy, and future-ready learning initiatives.
+
+CTA:
+
+Book a Discussion
+
+Download Proposal
+
+---
+
+Content Tone
+
+Professional
+
+Consultative
+
+Technology-first
+
+Institution-focused
+
+Confident
+
+Avoid exaggerated marketing language.
+
+Avoid words like:
+
+* Revolutionary
+* Best
+* No.1
+* World-class
+* Guaranteed
+
+Instead use:
+
+* Practical
+* Responsible
+* Industry-informed
+* Future-ready
+* Evidence-based
+* Collaborative
+
+---
+
+Trust Indicators
+
+Include prominently:
+
+* DPIIT Recognized Startup
+* AI Software Development
+* Intelligent Automation
+* Education Technology
+* Industry Experience
+* Practical AI Learning
+
+---
+
+Assets to Use
+
+* Innovgeist Logo
+* Founder Portrait
+* Proposal Content
+* Workshop Photos
+* Hackathon Photos
+* Company Information
+
+---
+
+Technical Requirements
+
+* Fully responsive
+* SEO friendly
+* Fast loading
+* Accessible
+* Smooth scrolling
+* Mobile-first
+* Clean animations
+* Optimized images
+
+---
+
+Footer
+
+Include:
+
+* aiwebinar.innovgeist.com
+* [support@innovgeist.com](mailto:support@innovgeist.com)
+* +91 8127273162
+* Lucknow, Uttar Pradesh
+* LinkedIn
+* Copyright
+
+---
+
+Deliverables
+
+The final website should:
+
+* Build trust within the first 5 seconds.
+* Position Innovgeist as an AI technology partner rather than a training provider.
+* Clearly explain the value of each AI education program.
+* Encourage educational institutions to schedule a discussion.
+* Maintain a premium, consistent design across every page.
+* Be easy to scale with future sections such as case studies, blogs, resources, or additional training programs.
+
+---
+
+Final Instruction to the AI Agent
+
+> Use the attached proposal as the primary content reference and maintain consistency in messaging, terminology, and visual hierarchy. Expand sections only where necessary to improve clarity and user experience. Every design and content decision should reinforce Innovgeist's identity as a technology company specializing in AI, intelligent automation, and education technology—not as a coaching institute or generic training provider. The final result should feel comparable to a product website from Microsoft Education or OpenAI, with a clean, executive, and timeless design.
