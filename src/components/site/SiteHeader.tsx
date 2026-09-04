@@ -204,6 +204,9 @@ export default function SiteHeader({ courses = [] }: { courses?: NavCourse[] }) 
             ))}
           </ul>
           <div className="header__nav-cta">
+            <Link className="btn btn--ghost btn--sm" href="/account" onClick={() => setOpen(false)}>
+              My account
+            </Link>
             <a className="btn btn--primary btn--sm" href="#contact">
               Book a Discussion
             </a>

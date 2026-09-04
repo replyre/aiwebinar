@@ -803,11 +803,34 @@ function CodesTab({
 
 /* ------------------------------- enrolments -------------------------------- */
 
+/**
+ * ⚠️ ONE PLACE DECIDES WHAT A ROW'S STATUS MEANS, so the summary tiles above the table and
+ * the pill on each row can never disagree about what counts as "pending" versus "failed".
+ *
+ * `status === "confirmed"` covers both `paid` and `not_required` (free/discounted-to-zero) —
+ * `confirmFreeEnrolment` sets both together, so payment status alone would double this case.
+ * Everything else reads `paymentStatus` directly: `pending` is still in progress (amber, not
+ * an alarm), `failed`/`refunded` are the two states where money didn't end up where it
+ * should (red) — a genuinely different situation from "hasn't tried yet."
+ */
+function enrolmentState(row: EnrolmentRow): { label: string; pill: "live" | "warn" | "error" | "draft" } {
+  if (row.status === "confirmed") return { label: "confirmed", pill: "live" };
+  if (row.paymentStatus === "pending") return { label: "pending", pill: "warn" };
+  if (row.paymentStatus === "failed" || row.paymentStatus === "refunded") {
+    return { label: row.paymentStatus, pill: "error" };
+  }
+  return { label: row.paymentStatus, pill: "draft" };
+}
+
 function EnrolmentsTab({ rows }: { rows: EnrolmentRow[] }) {
   if (!rows.length) return <p className="admin-empty">No enrollments yet.</p>;
 
   const confirmed = rows.filter((r) => r.status === "confirmed");
   const collected = confirmed.reduce((sum, r) => sum + r.amount, 0);
+  const pending = rows.filter((r) => r.status !== "confirmed" && r.paymentStatus === "pending");
+  const failed = rows.filter(
+    (r) => r.status !== "confirmed" && (r.paymentStatus === "failed" || r.paymentStatus === "refunded"),
+  );
 
   return (
     <>
@@ -821,8 +844,12 @@ function EnrolmentsTab({ rows }: { rows: EnrolmentRow[] }) {
           <dd>{rupees(collected)}</dd>
         </div>
         <div>
-          <dt>Incomplete</dt>
-          <dd>{rows.length - confirmed.length}</dd>
+          <dt>Pending</dt>
+          <dd>{pending.length}</dd>
+        </div>
+        <div>
+          <dt>Failed</dt>
+          <dd>{failed.length}</dd>
         </div>
       </div>
 
@@ -839,7 +866,9 @@ function EnrolmentsTab({ rows }: { rows: EnrolmentRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const state = enrolmentState(row);
+              return (
               <tr key={row.id}>
                 <td>
                   <strong>{row.studentName}</strong>
@@ -856,11 +885,7 @@ function EnrolmentsTab({ rows }: { rows: EnrolmentRow[] }) {
                 <td>{rupees(row.amount)}</td>
                 <td>{row.couponCode ?? "—"}</td>
                 <td>
-                  <span
-                    className={`admin-pill admin-pill--${row.status === "confirmed" ? "live" : "draft"}`}
-                  >
-                    {row.status === "confirmed" ? "confirmed" : row.paymentStatus}
-                  </span>
+                  <span className={`admin-pill admin-pill--${state.pill}`}>{state.label}</span>
                 </td>
                 <td className="admin-table__when">
                   {row.createdAt
@@ -875,7 +900,8 @@ function EnrolmentsTab({ rows }: { rows: EnrolmentRow[] }) {
                     : "—"}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

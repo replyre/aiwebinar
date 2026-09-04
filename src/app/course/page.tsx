@@ -43,9 +43,14 @@ export default async function CourseCatalogue() {
               decoding="async"
             />
           </Link>
-          <Link className="btn btn--ghost btn--sm" href="/#contact">
-            For institutions
-          </Link>
+          <div className="course-bar__right">
+            <Link className="btn btn--ghost btn--sm" href="/account">
+              My account
+            </Link>
+            <Link className="btn btn--ghost btn--sm" href="/#contact">
+              For institutions
+            </Link>
+          </div>
         </div>
       </header>
 

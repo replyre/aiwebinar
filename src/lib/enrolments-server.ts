@@ -135,6 +135,32 @@ export async function createPendingEnrolment(input: {
   return { ...doc, _id: result.insertedId } as EnrolmentDoc;
 }
 
+/**
+ * Reopen a `pending` or `failed` enrolment against a fresh Razorpay order — used to let a
+ * guardian retry a payment that never went through, instead of starting a brand new
+ * enrolment (and duplicate row) from scratch.
+ *
+ * ⚠️ RESETS `failed` BACK TO `pending`. `confirmPayment`'s atomic guard only flips a row that
+ * is still `pending`, so a retried order attached to a still-`failed` row would confirm
+ * silently to nobody — the payment would succeed and the seat would never be claimed.
+ */
+export async function reopenEnrolmentForPayment(
+  enrolmentId: ObjectId,
+  razorpayOrderId: string,
+): Promise<void> {
+  const db = await getDb();
+  await db.collection("enrolments").updateOne(
+    { _id: enrolmentId, "payment.status": { $in: ["pending", "failed"] } },
+    {
+      $set: {
+        "payment.status": "pending",
+        "payment.razorpayOrderId": razorpayOrderId,
+        updatedAt: new Date(),
+      },
+    },
+  );
+}
+
 export async function attachOrderId(
   enrolmentId: ObjectId,
   razorpayOrderId: string,
@@ -156,6 +182,23 @@ export async function getEnrolmentByReference(
   return (await db
     .collection<EnrolmentDoc>("enrolments")
     .findOne({ reference })) as EnrolmentDoc | null;
+}
+
+/**
+ * Every enrolment a guardian has made, newest first — the dashboard's whole query.
+ *
+ * ⚠️ CASE-INSENSITIVE ON PURPOSE. Account emails are lowercased at signup (`account.ts`),
+ * but `guardian.email` on an enrolment is stored exactly as typed at checkout — matching a
+ * plain lowercase equality here would silently hide a purchase made as "Jane@x.com".
+ */
+export async function getEnrolmentsByGuardianEmail(email: string): Promise<EnrolmentDoc[]> {
+  const db = await getDb();
+  const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return (await db
+    .collection<EnrolmentDoc>("enrolments")
+    .find({ "guardian.email": { $regex: `^${escaped}$`, $options: "i" } })
+    .sort({ createdAt: -1 })
+    .toArray()) as EnrolmentDoc[];
 }
 
 export async function getEnrolmentByOrderId(

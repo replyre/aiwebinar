@@ -120,13 +120,21 @@
 }
 .admin-pill--live { background: var(--pos-tint); color: var(--pos); }
 .admin-pill--draft { background: var(--bg-tint-2); color: var(--text-muted); }
+/* Still in progress — nobody's fault yet, so amber rather than red. */
+.admin-pill--warn { background: var(--warn-tint); color: var(--warn); }
+/* Money didn't move, or moved back — the two states worth a red flag. */
+.admin-pill--error { background: var(--neg-tint); color: var(--neg); }
 
 .admin-stats {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3);
   margin-bottom: var(--sp-5); padding: var(--sp-4) 0;
   border-block: 1px solid var(--border);
 }
-.admin-stats--wide { margin-bottom: var(--sp-6); }
+.admin-stats--wide {
+  margin-bottom: var(--sp-6);
+  /* One tile per stat, however many there are — the enrolments summary has 4, courses/batches have 3. */
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+}
 .admin-stats dt {
   font-size: .74rem; font-weight: 600; letter-spacing: .08em;
   text-transform: uppercase; color: var(--text-soft); margin-bottom: .2rem;

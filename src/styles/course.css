@@ -292,14 +292,28 @@
   font-size: .82rem; line-height: 1.55; color: var(--text-muted);
 }
 
+/* -------------------------------- account -------------------------------- */
+/* Sign in / Create account toggle, above the form. */
+.account-tabs { display: flex; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+
 /* ----------------------------- confirmation ----------------------------- */
 .enrolled { max-width: 62rem; margin-inline: auto; }
+/* Sign in / create account: one form, not a multi-card grid — the default width reads as a
+   near-empty page either side of it. */
+.enrolled--narrow { max-width: 28rem; }
 .enrolled__head { text-align: center; margin-bottom: var(--sp-8); }
+/* A pending/failed payment's "complete it now" card, sitting between the head and the rest
+   of the enrolment cards. */
+.enrolled__retry { margin-bottom: var(--sp-6); }
 .enrolled__tick {
   display: inline-grid; place-items: center;
   width: 56px; height: 56px; margin-bottom: var(--sp-5);
   border-radius: 50%; background: var(--pos-tint); color: var(--pos);
 }
+/* A payment that hasn't gone through yet, or didn't — a checkmark on either would say the
+   opposite of what the heading says right next to it. */
+.enrolled__tick--warn { background: var(--warn-tint); color: var(--warn); }
+.enrolled__tick--error { background: var(--neg-tint); color: var(--neg); }
 .enrolled__tick .icon { width: 28px; height: 28px; stroke-width: 2.5; }
 .enrolled__head .section__title { margin-inline: auto; }
 .enrolled__head .section__lede { margin-inline: auto; }
