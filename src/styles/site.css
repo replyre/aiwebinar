@@ -49,8 +49,8 @@
   --pos-tint:  #F0FAF5;
 
   /* Type */
-  --font-head: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-head: var(--font-poppins), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: var(--font-inter), "Segoe UI", system-ui, -apple-system, sans-serif;
 
   /* Spacing */
   --sp-1: .25rem; --sp-2: .5rem;  --sp-3: .75rem; --sp-4: 1rem;

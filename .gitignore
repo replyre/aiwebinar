@@ -11,7 +11,19 @@ Desktop.ini
 .vscode/
 .idea/
 *.swp
+env
+.env
 
 # Node
 node_modules/
 npm-debug.log*
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Env — never commit real keys
+.env*.local
+.env.production
