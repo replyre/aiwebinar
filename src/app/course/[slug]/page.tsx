@@ -173,7 +173,7 @@ export default async function CoursePage({ params }: Props) {
               </svg>
               <span>All courses</span>
             </Link>
-            <Link className="btn btn--ghost btn--sm" href="/account">
+            <Link className="btn btn--ghost btn--sm course-bar__account" href="/account">
               My account
             </Link>
             <a className="btn btn--primary btn--sm" href="#enrol">
@@ -283,6 +283,13 @@ export default async function CoursePage({ params }: Props) {
               An example of the change the method is built to produce — not an average, and not
               a promise of a specific result.
             </p>
+
+            <div className="course-cta-band course-cta-band--onDark">
+              <p>Want this for their own weakest subject?</p>
+              <a className="btn btn--primary" href="#enrol">
+                {ctaLabel ?? (payable === 0 ? "Join free" : `Enroll · ${formatPrice(payable)}`)}
+              </a>
+            </div>
           </div>
         </section>
 
@@ -354,6 +361,13 @@ export default async function CoursePage({ params }: Props) {
                 Set up and confident with {course.tools.join(", ")}.
               </p>
             ) : null}
+
+            <div className="course-cta-band course-cta-band--onLight">
+              <p>All of this, in {course.commitment.sessions} Sundays.</p>
+              <a className="btn btn--primary" href="#enrol">
+                {ctaLabel ?? (payable === 0 ? "Join free" : `Enroll · ${formatPrice(payable)}`)}
+              </a>
+            </div>
           </div>
         </section>
 

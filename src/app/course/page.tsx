@@ -44,7 +44,7 @@ export default async function CourseCatalogue() {
             />
           </Link>
           <div className="course-bar__right">
-            <Link className="btn btn--ghost btn--sm" href="/account">
+            <Link className="btn btn--ghost btn--sm course-bar__account" href="/account">
               My account
             </Link>
             <Link className="btn btn--ghost btn--sm" href="/#contact">
