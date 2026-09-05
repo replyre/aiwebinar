@@ -1330,7 +1330,8 @@ body.is-locked { overflow: hidden; }
 .form--compact .form__row + .field { margin-top: .7rem; }
 .form--compact .form__row { gap: .7rem; }
 .form--compact .field > label { font-size: .8rem; margin-bottom: .28rem; }
-.form--compact .field input { padding: .58rem .8rem; font-size: .9rem; border-radius: 10px; }
+/* 1rem, not smaller — same iOS zoom-on-focus threshold as the base `.field input` rule. */
+.form--compact .field input { padding: .58rem .8rem; font-size: 1rem; border-radius: 10px; }
 .form--compact .btn[type="submit"] { --py: .68rem; margin-top: var(--sp-4); }
 .form--compact .form__status { margin-top: .7rem; padding: .6rem .8rem; font-size: .84rem; }
 
@@ -1402,7 +1403,14 @@ body.is-locked { overflow: hidden; }
 
 .field input, .field select, .field textarea {
   width: 100%; padding: .78rem .95rem;
-  font-family: inherit; font-size: .95rem; color: var(--text);
+  font-family: inherit;
+  /**
+   * ⚠️ 1rem, NEVER LESS. iOS Safari zooms the whole page in the instant a focused input's
+   * computed font-size drops under 16px — the visitor taps a field mid-checkout and the
+   * page lurches and re-centres under their thumb. This is not a size preference, it is the
+   * threshold that switches that behaviour off.
+   */
+  font-size: 1rem; color: var(--text);
   background: var(--bg); border: 1px solid var(--border-mid); border-radius: 12px;
   transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
 }

@@ -118,6 +118,33 @@
   font-size: .86rem; line-height: 1.6; color: var(--on-dark-soft);
 }
 
+/**
+ * Mid-page CTA repeats — the sticky header (and, on phone, the bottom bar) already keep the
+ * button reachable at every scroll position; these are placed instead of relied on, right
+ * after the two strongest persuasion beats on the page, so a reader who is *already sold*
+ * never has to hunt for the button they just decided to press.
+ */
+.course-cta-band {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: var(--sp-4) var(--sp-6); margin-top: var(--sp-8);
+  padding: var(--sp-5) var(--sp-6); border-radius: var(--r-lg);
+  text-align: center;
+}
+.course-cta-band p {
+  margin: 0; font-family: var(--font-head); font-weight: 700; font-size: 1.05rem;
+}
+.course-cta-band .btn { flex: none; }
+/* On the dark proof section the band sits on the same navy, just picked out by a border. */
+.course-cta-band--onDark {
+  border: 1px solid var(--border-dark); background: rgba(255, 255, 255, .04);
+}
+.course-cta-band--onDark p { color: var(--on-dark); }
+/* On a light section it's the tint used everywhere else for a "quiet card". */
+.course-cta-band--onLight {
+  border: 1px solid var(--border); background: var(--bg-tint);
+}
+.course-cta-band--onLight p { color: var(--navy-800); }
+
 /* ------------------------------- outcomes ------------------------------- */
 .course-outcomes {
   list-style: none; margin: 0; padding: 0;
@@ -605,6 +632,13 @@
 .course-bar__back:hover { color: var(--navy-800); }
 .course-bar__back .icon { width: 15px; height: 15px; }
 @media (max-width: 640px) { .course-bar__back span { display: none; } }
+/**
+ * ⚠️ THREE ITEMS, ONE ROW, NO WRAP — on a 360-390px phone the logo plus "All courses",
+ * "My account" and the enroll button do not all fit, and neither wraps: it either overflows
+ * the header or squeezes the CTA that this whole page exists to get tapped. "My account" is
+ * the one a phone visitor mid-browse least needs right now, so it goes first.
+ */
+@media (max-width: 480px) { .course-bar__account { display: none; } }
 
 /* The hero gets a batch strip: the one thing a buyer scans for before price. */
 .course-hero__batch {
@@ -628,7 +662,10 @@
 .course-sticky {
   position: fixed; inset: auto 0 0 0; z-index: 90;
   display: none; align-items: center; justify-content: space-between; gap: var(--sp-4);
-  padding: .7rem var(--gutter);
+  /* ⚠️ THE BOTTOM PADDING INCLUDES THE SAFE AREA, ALWAYS. Without it this bar — and the
+     button that is the entire point of it — sits flush against a notched phone's home
+     indicator, right where the OS reads a swipe-up as "close the app" instead of a tap. */
+  padding: .7rem var(--gutter) calc(.7rem + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, .96);
   backdrop-filter: saturate(140%) blur(10px);
   -webkit-backdrop-filter: saturate(140%) blur(10px);
@@ -644,7 +681,9 @@
 }
 .course-sticky .btn { flex: none; }
 /* Keep the footer clear of the bar. */
-@media (max-width: 900px) { .site-footer { padding-bottom: 5.5rem; } }
+/* Clearance must grow with the bar's own safe-area padding above, or the bar covers the
+   footer's last inch on a notched phone. */
+@media (max-width: 900px) { .site-footer { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); } }
 .course-bar__right { display: flex; align-items: center; gap: var(--sp-4); }
 .course-enrol__batch--tbc {
   display: block; margin-top: var(--sp-4); padding: var(--sp-4);
@@ -901,7 +940,9 @@
 .enrol-modal__main .field > label { font-size: .8rem; margin-bottom: .25rem; }
 .enrol-modal__main .field input,
 .enrol-modal__main .field select {
-  padding: .5rem .65rem; font-size: .9rem;
+  /* 1rem, not smaller — the same iOS zoom-on-focus threshold as the page checkout form;
+     this popup is the more likely place a phone visitor first taps a field. */
+  padding: .5rem .65rem; font-size: 1rem;
 }
 .enrol-modal__main .course-coupon { margin-top: var(--sp-4); padding: var(--sp-3); }
 .enrol-modal__main .course-coupon > label { font-size: .82rem; margin-bottom: .4rem; }
