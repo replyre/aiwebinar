@@ -1,0 +1,7 @@
+# The pre-port static site, kept in-repo for diffing only. Shipping it would put a second
+# copy of the whole page — and the vanilla JS it used to run — into the deployment.
+legacy/
+
+# Design sources. `public/assets/img/course/` holds the renditions that are actually served;
+# this is the 1.7 MB PNG they were generated from.
+source-assets/
