@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import CourseImage from "@/components/course/CourseImage";
 import EnrolModal from "@/components/course/EnrolModal";
 import EnrolPanel from "@/components/course/EnrolPanel";
+import PayNowButton from "@/components/course/PayNowButton";
 import ProofGain from "@/components/course/ProofGain";
 import SiteFooter from "@/components/site/SiteFooter";
+import { ACCOUNT_COOKIE, verifyAccountToken } from "@/lib/account-auth";
+import { getAccountById } from "@/lib/accounts-server";
 import {
   formatDateRange,
   formatPrice,
@@ -15,6 +19,7 @@ import {
   seatsLeft,
 } from "@/lib/course";
 import { getOpenCohorts, getPublishedCourse } from "@/lib/courses-server";
+import { getEnrolmentsByGuardianEmail } from "@/lib/enrolments-server";
 
 /**
  * The course sales page.
@@ -78,6 +83,68 @@ export default async function CoursePage({ params }: Props) {
     seatsLeft: seatsLeft(cohort),
   }));
 
+  /**
+   * ⚠️ A SIGNED-IN GUARDIAN NEVER RETYPES THEIR OWN DETAILS, AND NEVER BUYS THE SAME COURSE
+   * TWICE BY ACCIDENT. Both come from one lookup: their existing enrolments for *this*
+   * course. An active one (paid, or free/no-payment-needed) replaces the form with "you're
+   * already enrolled"; a pending/failed one replaces it with a retry button against that same
+   * row, never a fresh one. Only when neither exists does the checkout form render — prefilled
+   * with the account's name and email so the six fields become four.
+   */
+  const accountToken = (await cookies()).get(ACCOUNT_COOKIE)?.value;
+  const viewerId = verifyAccountToken(accountToken);
+  const viewer = viewerId ? await getAccountById(viewerId) : null;
+
+  let existing: { status: "active" | "pending" | "failed"; reference: string } | null = null;
+  if (viewer) {
+    const guardianEnrolments = (await getEnrolmentsByGuardianEmail(viewer.email)).filter(
+      (e) => e.courseSlug === course.slug,
+    );
+    const active = guardianEnrolments.find(
+      (e) => e.payment.status === "paid" || e.payment.status === "not_required",
+    );
+    const pending = guardianEnrolments.find((e) => e.payment.status === "pending");
+    const failed = guardianEnrolments.find((e) => e.payment.status === "failed");
+    const pick = active ?? pending ?? failed;
+    if (pick) {
+      existing = { status: active ? "active" : pending ? "pending" : "failed", reference: pick.reference };
+    }
+  }
+
+  /** So the "Enroll" buttons up top never contradict the panel they scroll to. */
+  const ctaLabel =
+    existing?.status === "active"
+      ? "View your enrollment"
+      : existing
+        ? "Finish your payment"
+        : payable === 0
+          ? "Join free"
+          : null; // null = the two call sites keep their own "Enroll · ₹price" / "Enroll now" wording
+
+  const enrolSlot =
+    existing?.status === "active" ? (
+      <div className="enrolled__card enrolled__card--muted">
+        <h2>You&rsquo;re already enrolled</h2>
+        <p className="enrolled__note">This course is already on your account.</p>
+        <Link className="btn btn--primary btn--block" href={`/course/enrolled/${existing.reference}`}>
+          View your enrollment
+        </Link>
+      </div>
+    ) : existing?.status === "pending" || existing?.status === "failed" ? (
+      <div className="enrolled__card enrolled__card--muted">
+        <h2>Finish your payment</h2>
+        <p className="enrolled__note">{formatPrice(payable)} due to confirm your seat.</p>
+        <PayNowButton reference={existing.reference} label="Complete payment" />
+      </div>
+    ) : (
+      <EnrolPanel
+        cohorts={cohortOptions}
+        amount={payable}
+        courseSlug={course.slug}
+        viewer={viewer ? { fullName: viewer.fullName, email: viewer.email } : null}
+      />
+    );
+
   return (
     <>
       <a className="skip-link" href="#main">
@@ -106,8 +173,11 @@ export default async function CoursePage({ params }: Props) {
               </svg>
               <span>All courses</span>
             </Link>
+            <Link className="btn btn--ghost btn--sm course-bar__account" href="/account">
+              My account
+            </Link>
             <a className="btn btn--primary btn--sm" href="#enrol">
-              {payable === 0 ? "Join free" : `Enroll · ${formatPrice(payable)}`}
+              {ctaLabel ?? `Enroll · ${formatPrice(payable)}`}
             </a>
           </div>
         </div>
@@ -125,7 +195,7 @@ export default async function CoursePage({ params }: Props) {
 
               <div className="course-hero__cta">
                 <a className="btn btn--primary btn--lg" href="#enrol">
-                  {payable === 0 ? "Join free" : "Enroll now"}
+                  {ctaLabel ?? "Enroll now"}
                   <svg className="icon" aria-hidden="true" viewBox="0 0 24 24">
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
@@ -213,6 +283,13 @@ export default async function CoursePage({ params }: Props) {
               An example of the change the method is built to produce — not an average, and not
               a promise of a specific result.
             </p>
+
+            <div className="course-cta-band course-cta-band--onDark">
+              <p>Want this for their own weakest subject?</p>
+              <a className="btn btn--primary" href="#enrol">
+                {ctaLabel ?? (payable === 0 ? "Join free" : `Enroll · ${formatPrice(payable)}`)}
+              </a>
+            </div>
           </div>
         </section>
 
@@ -284,6 +361,13 @@ export default async function CoursePage({ params }: Props) {
                 Set up and confident with {course.tools.join(", ")}.
               </p>
             ) : null}
+
+            <div className="course-cta-band course-cta-band--onLight">
+              <p>All of this, in {course.commitment.sessions} Sundays.</p>
+              <a className="btn btn--primary" href="#enrol">
+                {ctaLabel ?? (payable === 0 ? "Join free" : `Enroll · ${formatPrice(payable)}`)}
+              </a>
+            </div>
           </div>
         </section>
 
@@ -380,11 +464,7 @@ export default async function CoursePage({ params }: Props) {
             </div>
 
             <div>
-              <EnrolPanel
-                cohorts={cohortOptions}
-                amount={payable}
-                courseSlug={course.slug}
-              />
+              {enrolSlot}
 
               {/**
                * Trust marks sit under the button, not above it — they answer the doubt that
@@ -503,7 +583,7 @@ export default async function CoursePage({ params }: Props) {
         proof={{ before: course.proof.exampleBefore, after: course.proof.exampleAfter }}
         weeks={course.commitment.sessions}
       >
-        <EnrolPanel cohorts={cohortOptions} amount={payable} courseSlug={course.slug} />
+        {enrolSlot}
       </EnrolModal>
 
       {/* Phone-only: the enrol button is otherwise a full page away from the reader. */}
@@ -512,7 +592,7 @@ export default async function CoursePage({ params }: Props) {
           <strong>{formatPrice(payable)}</strong>
         </p>
         <a className="btn btn--primary" href="#enrol">
-          {payable === 0 ? "Join free" : "Enroll now"}
+          {ctaLabel ?? "Enroll now"}
         </a>
       </div>
     </>

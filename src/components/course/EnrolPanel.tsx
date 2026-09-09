@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState, type FormEvent } from "react";
 import type { CouponResponse } from "@/lib/coupon";
+import { formatSessionDate, formatSessionTime } from "@/lib/course";
 import {
   CONSENT_TEXT,
   STUDENT_CLASSES,
@@ -32,11 +33,14 @@ export default function EnrolPanel({
   cohorts,
   amount,
   courseSlug,
+  viewer,
 }: {
   cohorts: CohortOption[];
   /** Price after any course-level discount, in paise. A coupon reduces it further. */
   amount: number;
   courseSlug: string;
+  /** The signed-in guardian, if any — prefills their name and email so they don't retype it. */
+  viewer?: { fullName: string; email: string } | null;
 }) {
   const formatMoney = (paise: number) =>
     paise === 0
@@ -326,12 +330,15 @@ export default function EnrolPanel({
                   <strong>{cohort.name}</strong>
                   {cohort.sessions.length ? (
                     <em>
-                      Starts{" "}
-                      {new Intl.DateTimeFormat("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        timeZone: "Asia/Kolkata",
-                      }).format(new Date(cohort.sessions[0].startsAt))}
+                      {/**
+                       * ⚠️ DATE AND TIME, NOT JUST DATE. Two batches that start on different
+                       * weeks are told apart by the date alone — two batches on the same week
+                       * at different times of day are not. Showing only "Starts 12 Oct" for
+                       * both a 10am and a 6pm batch is the exact case this picker exists to
+                       * resolve.
+                       */}
+                      Starts {formatSessionDate(new Date(cohort.sessions[0].startsAt))} ·{" "}
+                      {formatSessionTime(new Date(cohort.sessions[0].startsAt))}
                     </em>
                   ) : null}
                 </span>
@@ -388,7 +395,11 @@ export default function EnrolPanel({
 
       <p className="course-form__group">
         Parent or guardian
-        <span>They&rsquo;ll get the class link and updates on WhatsApp.</span>
+        <span>
+          {viewer
+            ? `Signed in as ${viewer.email} — details below are filled in for you.`
+            : "They’ll get the class link and updates on WhatsApp."}
+        </span>
       </p>
 
       <div className="field">
@@ -400,6 +411,7 @@ export default function EnrolPanel({
             name="guardianName"
             type="text"
             autoComplete="name"
+            defaultValue={viewer?.fullName ?? ""}
             aria-invalid={errors["guardian.fullName"] ? true : undefined}
             onInput={() => clearError("guardian.fullName")}
             required
@@ -433,6 +445,7 @@ export default function EnrolPanel({
             name="email"
             type="email"
             autoComplete="email"
+            defaultValue={viewer?.email ?? ""}
             aria-invalid={errors["guardian.email"] ? true : undefined}
             onInput={() => clearError("guardian.email")}
             required

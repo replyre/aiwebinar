@@ -13,7 +13,11 @@ import {
   attachOrderId,
   confirmFreeEnrolment,
   createPendingEnrolment,
+  findExistingEnrolment,
+  reopenEnrolmentForPayment,
+  updateEnrolmentForResubmission,
   type AppliedCoupon,
+  type EnrolmentDoc,
 } from "@/lib/enrolments-server";
 import { getCohortById, getPublishedCourse } from "@/lib/courses-server";
 import { mongoConfigured } from "@/lib/mongodb";
@@ -167,25 +171,94 @@ export async function POST(request: Request): Promise<NextResponse<EnrolResponse
 
   const userAgent = request.headers.get("user-agent") ?? "";
 
-  let enrolmentDoc;
-  try {
-    enrolmentDoc = await createPendingEnrolment({
-      course,
-      cohort,
-      enrolment,
-      consentText: CONSENT_TEXT,
-      consentVersion: CONSENT_VERSION,
-      ip,
-      userAgent,
+  /**
+   * ⚠️ CHECKED HERE, NOT JUST RENDERED ON THE COURSE PAGE. The "you're already enrolled" /
+   * "finish your payment" card on the course page is a courtesy that stops most people from
+   * seeing this form twice — it cannot stop this endpoint from being hit again from a stale
+   * tab, a back-navigation, or the auto-popup modal that rendered before a guardian signed in.
+   * This is the one place that actually writes a row, so it is the one place that has to ask.
+   */
+  const existing = await findExistingEnrolment({
+    courseSlug: course.slug,
+    studentName: enrolment.student.fullName,
+    guardianEmail: enrolment.guardian.email,
+  });
+
+  if (existing && (existing.payment.status === "paid" || existing.payment.status === "not_required")) {
+    return NextResponse.json({ ok: true, confirmedUrl: `/course/enrolled/${existing.reference}` });
+  }
+
+  let enrolmentDoc: EnrolmentDoc;
+  // Tracked separately from `existing` because the race-recovery path below also ends up
+  // reusing a row, even though `existing` itself was null when this request started.
+  let reused = Boolean(existing);
+
+  if (existing) {
+    // A pending or failed attempt for the same student — refresh it with whatever was just
+    // typed and pick up exactly where a fresh submission would, without a second row.
+    await updateEnrolmentForResubmission({
+      enrolmentId: existing._id,
+      cohortId: cohort?.id ?? null,
+      student: enrolment.student,
+      guardian: enrolment.guardian,
       coupon: appliedCoupon,
       amount,
     });
-  } catch (error) {
-    console.error("[enrol] could not store the enrolment", error);
-    return NextResponse.json(
-      { ok: false, message: "Something went wrong. Please email support@innovgeist.com." },
-      { status: 500 },
-    );
+    enrolmentDoc = { ...existing, cohortId: cohort?.id ?? null, student: enrolment.student, guardian: enrolment.guardian };
+  } else {
+    try {
+      enrolmentDoc = await createPendingEnrolment({
+        course,
+        cohort,
+        enrolment,
+        consentText: CONSENT_TEXT,
+        consentVersion: CONSENT_VERSION,
+        ip,
+        userAgent,
+        coupon: appliedCoupon,
+        amount,
+      });
+    } catch (error) {
+      /**
+       * ⚠️ A DUPLICATE-KEY ERROR HERE MEANS SOMEONE ELSE JUST WON A RACE, NOT THAT ANYTHING
+       * BROKE. Two requests can both pass the `findExistingEnrolment` check above before
+       * either has written a row — that is exactly what the partial unique index on
+       * `dedupeKey` exists to catch. The loser re-fetches what the winner just created and
+       * joins it, the same as a normal resubmission, instead of failing with a 500 right
+       * after a card may have been charged.
+       */
+      const code = (error as { code?: number } | null)?.code;
+      const raced = code === 11000
+        ? await findExistingEnrolment({
+            courseSlug: course.slug,
+            studentName: enrolment.student.fullName,
+            guardianEmail: enrolment.guardian.email,
+          })
+        : null;
+
+      if (!raced) {
+        console.error("[enrol] could not store the enrolment", error);
+        return NextResponse.json(
+          { ok: false, message: "Something went wrong. Please email support@innovgeist.com." },
+          { status: 500 },
+        );
+      }
+
+      if (raced.payment.status === "paid" || raced.payment.status === "not_required") {
+        return NextResponse.json({ ok: true, confirmedUrl: `/course/enrolled/${raced.reference}` });
+      }
+
+      await updateEnrolmentForResubmission({
+        enrolmentId: raced._id,
+        cohortId: cohort?.id ?? null,
+        student: enrolment.student,
+        guardian: enrolment.guardian,
+        coupon: appliedCoupon,
+        amount,
+      });
+      enrolmentDoc = { ...raced, cohortId: cohort?.id ?? null, student: enrolment.student, guardian: enrolment.guardian };
+      reused = true;
+    }
   }
 
   /**
@@ -233,7 +306,13 @@ export async function POST(request: Request): Promise<NextResponse<EnrolResponse
       },
     });
 
-    await attachOrderId(enrolmentDoc._id, order.id);
+    // A resubmission resets `failed` back to `pending` and attaches the new order in one
+    // step; a fresh row just needs the order id attached.
+    if (reused) {
+      await reopenEnrolmentForPayment(enrolmentDoc._id, order.id);
+    } else {
+      await attachOrderId(enrolmentDoc._id, order.id);
+    }
 
     return NextResponse.json({
       ok: true,

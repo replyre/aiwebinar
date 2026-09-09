@@ -36,6 +36,17 @@ export interface AppliedCoupon {
  * claimed.
  */
 
+/**
+ * The same course + guardian email + student name, normalised into one string — this is what
+ * the database itself refuses to duplicate (see `ensureEnrolmentIndexes`), so two near-
+ * simultaneous submissions (a double-click, two tabs firing at once) can't both slip past the
+ * `findExistingEnrolment` check before either has written a row. Application logic closes the
+ * common case; this closes the race.
+ */
+function dedupeKey(courseSlug: string, guardianEmail: string, studentName: string): string {
+  return `${courseSlug}::${guardianEmail.trim().toLowerCase()}::${studentName.trim().toLowerCase()}`;
+}
+
 export interface EnrolmentDoc {
   _id: ObjectId;
   courseSlug: string;
@@ -43,6 +54,9 @@ export interface EnrolmentDoc {
   cohortId: string | null;
   student: Enrolment["student"];
   guardian: Enrolment["guardian"];
+  /** See `dedupeKey`. Absent on rows written before this existed — those are simply not
+   *  covered by the database constraint, only by the application-level check. */
+  dedupeKey?: string;
   consent: { textVersion: string; text: string; at: Date; ip: string };
   payment: {
     status: PaymentStatus;
@@ -96,6 +110,7 @@ export async function createPendingEnrolment(input: {
   amount: number;
 }): Promise<EnrolmentDoc> {
   const db = await getDb();
+  await ensureEnrolmentIndexes(db);
   const now = new Date();
   const { amount } = input;
 
@@ -104,6 +119,11 @@ export async function createPendingEnrolment(input: {
     cohortId: input.cohort?.id ?? null,
     student: input.enrolment.student,
     guardian: input.enrolment.guardian,
+    dedupeKey: dedupeKey(
+      input.course.slug,
+      input.enrolment.guardian.email,
+      input.enrolment.student.fullName,
+    ),
     consent: {
       textVersion: input.consentVersion,
       // The wording is stored alongside the version, not just referenced by it — a
@@ -135,6 +155,91 @@ export async function createPendingEnrolment(input: {
   return { ...doc, _id: result.insertedId } as EnrolmentDoc;
 }
 
+/**
+ * The same guardian, the same student, the same course — used at the *start* of checkout,
+ * not just on the page that renders it.
+ *
+ * ⚠️ THIS IS THE SERVER-SIDE GUARD; THE COURSE PAGE'S "YOU'RE ALREADY ENROLLED" CARD IS NOT.
+ * That card only stops someone from *seeing* the checkout form again — it cannot stop a
+ * submission from a stale tab, a back-navigation, or the auto-popup modal that rendered
+ * before a guardian signed in. A duplicate row is only actually prevented by checking again
+ * right here, at the one place that writes one.
+ *
+ * ⚠️ MATCHED ON STUDENT NAME TOO, NOT JUST GUARDIAN EMAIL. A guardian buying the same course
+ * for a second child uses the same email on purpose — blocking on email alone would treat a
+ * legitimate second seat as a duplicate of the first.
+ */
+export async function findExistingEnrolment(input: {
+  courseSlug: string;
+  studentName: string;
+  guardianEmail: string;
+}): Promise<EnrolmentDoc | null> {
+  const db = await getDb();
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return (await db.collection<EnrolmentDoc>("enrolments").findOne({
+    courseSlug: input.courseSlug,
+    "guardian.email": { $regex: `^${escape(input.guardianEmail)}$`, $options: "i" },
+    "student.fullName": { $regex: `^${escape(input.studentName.trim())}$`, $options: "i" },
+    "payment.status": { $in: ["paid", "not_required", "pending", "failed"] },
+  })) as EnrolmentDoc | null;
+}
+
+/**
+ * Resubmitting the same student's checkout — refreshes the *existing* row with whatever the
+ * guardian just typed (a corrected phone number, a newly applied coupon) instead of writing a
+ * second one. Pair with `confirmFreeEnrolment` or `reopenEnrolmentForPayment` depending on
+ * whether the recomputed amount is zero, exactly as a fresh submission would.
+ */
+export async function updateEnrolmentForResubmission(input: {
+  enrolmentId: ObjectId;
+  cohortId: string | null;
+  student: Enrolment["student"];
+  guardian: Enrolment["guardian"];
+  coupon: AppliedCoupon | null;
+  amount: number;
+}): Promise<void> {
+  const db = await getDb();
+  await db.collection("enrolments").updateOne(
+    { _id: input.enrolmentId, "payment.status": { $in: ["pending", "failed"] } },
+    {
+      $set: {
+        cohortId: input.cohortId,
+        student: input.student,
+        guardian: input.guardian,
+        "payment.amount": input.amount,
+        "payment.coupon": input.coupon,
+        updatedAt: new Date(),
+      },
+    },
+  );
+}
+
+/**
+ * Reopen a `pending` or `failed` enrolment against a fresh Razorpay order — used to let a
+ * guardian retry a payment that never went through, instead of starting a brand new
+ * enrolment (and duplicate row) from scratch.
+ *
+ * ⚠️ RESETS `failed` BACK TO `pending`. `confirmPayment`'s atomic guard only flips a row that
+ * is still `pending`, so a retried order attached to a still-`failed` row would confirm
+ * silently to nobody — the payment would succeed and the seat would never be claimed.
+ */
+export async function reopenEnrolmentForPayment(
+  enrolmentId: ObjectId,
+  razorpayOrderId: string,
+): Promise<void> {
+  const db = await getDb();
+  await db.collection("enrolments").updateOne(
+    { _id: enrolmentId, "payment.status": { $in: ["pending", "failed"] } },
+    {
+      $set: {
+        "payment.status": "pending",
+        "payment.razorpayOrderId": razorpayOrderId,
+        updatedAt: new Date(),
+      },
+    },
+  );
+}
+
 export async function attachOrderId(
   enrolmentId: ObjectId,
   razorpayOrderId: string,
@@ -156,6 +261,23 @@ export async function getEnrolmentByReference(
   return (await db
     .collection<EnrolmentDoc>("enrolments")
     .findOne({ reference })) as EnrolmentDoc | null;
+}
+
+/**
+ * Every enrolment a guardian has made, newest first — the dashboard's whole query.
+ *
+ * ⚠️ CASE-INSENSITIVE ON PURPOSE. Account emails are lowercased at signup (`account.ts`),
+ * but `guardian.email` on an enrolment is stored exactly as typed at checkout — matching a
+ * plain lowercase equality here would silently hide a purchase made as "Jane@x.com".
+ */
+export async function getEnrolmentsByGuardianEmail(email: string): Promise<EnrolmentDoc[]> {
+  const db = await getDb();
+  const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return (await db
+    .collection<EnrolmentDoc>("enrolments")
+    .find({ "guardian.email": { $regex: `^${escaped}$`, $options: "i" } })
+    .sort({ createdAt: -1 })
+    .toArray()) as EnrolmentDoc[];
 }
 
 export async function getEnrolmentByOrderId(
@@ -277,6 +399,28 @@ export async function markPaymentFailed(razorpayOrderId: string): Promise<void> 
   );
 }
 
+let indexesEnsured = false;
+
 export async function ensureEnrolmentIndexes(db: Db): Promise<void> {
+  if (indexesEnsured) return;
   await db.collection("enrolments").createIndex({ reference: 1 }, { unique: true });
+  /**
+   * ⚠️ THE DATABASE-LEVEL BACKSTOP FOR `findExistingEnrolment`. A partial index only applies
+   * to documents matching its filter, so a refunded or cancelled enrolment is free to be
+   * superseded by a new one — this only refuses a *second* row while an existing one is still
+   * active, paid, or unresolved. Two requests that both raced past the application-level check
+   * cannot both insert here; the loser gets a duplicate-key error, which the enrol route
+   * catches and turns into "join the row that just won" instead of a 500.
+   */
+  await db.collection("enrolments").createIndex(
+    { dedupeKey: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        dedupeKey: { $exists: true },
+        "payment.status": { $in: ["paid", "not_required", "pending", "failed"] },
+      },
+    },
+  );
+  indexesEnsured = true;
 }

@@ -11,6 +11,8 @@ Desktop.ini
 .vscode/
 .idea/
 *.swp
+env
+.env
 
 # Node
 node_modules/

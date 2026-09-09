@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import SiteFooter from "@/components/site/SiteFooter";
+import PayNowButton from "@/components/course/PayNowButton";
+import QuickAccountCreate from "@/components/account/QuickAccountCreate";
+import { ACCOUNT_COOKIE, verifyAccountToken } from "@/lib/account-auth";
+import { getAccountByEmail } from "@/lib/accounts-server";
 import {
   daysUntil,
   formatPrice,
@@ -49,7 +54,14 @@ export default async function EnrolledPage({ params }: Props) {
   const dated = (cohort?.sessions ?? []).filter((s) => s.startsAt);
   const firstSession = dated[0]?.startsAt ?? null;
   const days = firstSession ? daysUntil(firstSession) : null;
-  const paid = enrolment.payment.status === "paid" || enrolment.payment.status === "not_required";
+
+  const status = enrolment.payment.status;
+  const paid = status === "paid" || status === "not_required";
+  const canRetry = status === "pending" || status === "failed";
+
+  const token = (await cookies()).get(ACCOUNT_COOKIE)?.value;
+  const signedIn = Boolean(verifyAccountToken(token));
+  const hasAccount = signedIn ? true : Boolean(await getAccountByEmail(enrolment.guardian.email));
 
   return (
     <>
@@ -72,32 +84,75 @@ export default async function EnrolledPage({ params }: Props) {
       <main id="main" className="section">
         <div className="container enrolled">
           <div className="enrolled__head">
-            <span className="enrolled__tick" aria-hidden="true">
+            <span
+              className={`enrolled__tick${
+                paid ? "" : status === "failed" ? " enrolled__tick--error" : " enrolled__tick--warn"
+              }`}
+              aria-hidden="true"
+            >
               <svg className="icon" viewBox="0 0 24 24">
-                <path d="M20 6 9 17l-5-5" />
+                {paid ? (
+                  <path d="M20 6 9 17l-5-5" />
+                ) : status === "failed" ? (
+                  <>
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </>
+                ) : (
+                  <>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3.5 2" />
+                  </>
+                )}
               </svg>
             </span>
-            <p className="eyebrow">{paid ? "Enrollment confirmed" : "Enrollment received"}</p>
+            <p className="eyebrow">
+              {paid
+                ? "Enrollment confirmed"
+                : status === "failed"
+                  ? "Payment didn't go through"
+                  : "Payment pending"}
+            </p>
             <h1 className="section__title">
-              {enrolment.student.fullName.split(" ")[0]} is in.
+              {paid
+                ? `${enrolment.student.fullName.split(" ")[0]} is in.`
+                : status === "failed"
+                  ? "Almost there — payment didn't complete."
+                  : "Almost there — finish your payment."}
             </h1>
             <p className="section__lede">
-              {course ? course.title : "The course"}
-              {cohort ? ` · ${cohort.name}` : ""}
-              {days !== null && days >= 0 ? (
+              {paid ? (
                 <>
-                  {" "}
-                  — starting{" "}
-                  <strong>
-                    {days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`}
-                  </strong>
-                  .
+                  {course ? course.title : "The course"}
+                  {cohort ? ` · ${cohort.name}` : ""}
+                  {days !== null && days >= 0 ? (
+                    <>
+                      {" "}
+                      — starting{" "}
+                      <strong>
+                        {days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`}
+                      </strong>
+                      .
+                    </>
+                  ) : (
+                    " — we'll confirm the start date shortly."
+                  )}
                 </>
               ) : (
-                " — we'll confirm the start date shortly."
+                <>
+                  {course ? course.title : "The course"} — no seat is held until payment
+                  completes.
+                </>
               )}
             </p>
           </div>
+
+          {canRetry ? (
+            <div className="enrolled__card enrolled__card--muted enrolled__retry">
+              <h2>{formatPrice(enrolment.payment.amount)} due</h2>
+              <PayNowButton reference={enrolment.reference} label="Complete payment" />
+            </div>
+          ) : null}
 
           <div className="enrolled__grid">
             <section className="enrolled__card">
@@ -190,6 +245,16 @@ export default async function EnrolledPage({ params }: Props) {
                 <a href="tel:+918127273162">+91 81272 73162</a>.
               </p>
             </section>
+
+            {!hasAccount ? (
+              <section className="enrolled__card">
+                <h2>Track this online</h2>
+                <QuickAccountCreate
+                  fullName={enrolment.guardian.fullName}
+                  email={enrolment.guardian.email}
+                />
+              </section>
+            ) : null}
           </div>
         </div>
       </main>
