@@ -36,6 +36,22 @@ import { COMPANY } from "@/lib/legal";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The cohort WhatsApp group.
+ *
+ * ⚠️ HARD-CODED, AND `cohort.joiningLink` IS THE PATTERN IT SHOULD FOLLOW. That one is a
+ * field an admin edits per batch; this is one URL compiled into the bundle, so a second
+ * course — or a second batch that needs its own group — cannot have a different one
+ * without a deploy. `course.ts` opens by warning against exactly this ("A COURSE IS DATA,
+ * NOT CODE"), and it is right. Kept as a constant only because there is one group today;
+ * the moment there are two, move it onto the cohort beside `joiningLink`.
+ *
+ * ⚠️ THE INVITE IS A SECRET IN THE WEAK SENSE — anyone holding it can join. It is rendered
+ * only on a *paid* confirmation, behind a 24-character random reference, which is what
+ * keeps it away from people who have not bought a seat. Do not move it anywhere public.
+ */
+const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/D1x76ipFzFJ0E43s0ckalQ";
+
 export const metadata: Metadata = {
   title: "You're enrolled | Innovgeist",
   robots: { index: false, follow: false },
@@ -235,6 +251,38 @@ export default async function EnrolledPage({ params }: Props) {
 
             <section className="conf-card">
               <h2>Joining the class</h2>
+
+              {/**
+               * ⚠️ `paid` GATES THIS, NOT `hasAccount` OR ANYTHING ELSE. The group is the
+               * one thing on this page that hands over something of value the moment it is
+               * seen — an invite link works for whoever holds it, and it cannot be taken
+               * back short of resetting the group. A pending or failed payment must never
+               * render it: the seat is not bought, and the retry card above is what that
+               * visitor is here for.
+               *
+               * It sits above the class link because it is the action that exists *today*.
+               * The class link is set by hand once a batch is scheduled, so on a freshly
+               * paid confirmation the block below is usually a promise rather than a
+               * button — leading with the promise buries the one thing that works.
+               */}
+              {paid ? (
+                <div className="conf-card__group">
+                  <a
+                    className="btn btn--whatsapp btn--block"
+                    href={WHATSAPP_GROUP_URL}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <svg className="icon icon--solid" aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.91-9.91a9.86 9.86 0 0 0-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 1.67c2.2 0 4.27.86 5.83 2.42a8.2 8.2 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.25 8.24a8.23 8.23 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24Z" />
+                      <path d="M9.36 7.2c-.18-.4-.36-.41-.53-.42h-.45c-.16 0-.42.06-.63.3-.22.24-.83.81-.83 1.98s.85 2.3 .97 2.46c.12.16 1.65 2.65 4.07 3.6 2.01.8 2.42.64 2.86.6.43-.04 1.4-.57 1.6-1.13.2-.55.2-1.03.14-1.13-.06-.1-.22-.16-.46-.28-.24-.12-1.4-.69-1.62-.77-.22-.08-.37-.12-.53.12-.16.24-.61.77-.75.93-.14.16-.28.18-.51.06-.24-.12-1-.37-1.9-1.18-.7-.63-1.18-1.4-1.32-1.64-.14-.24-.01-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.53-1.3-.75-1.78Z" />
+                    </svg>
+                    Join the group
+                  </a>
+                  <p className="conf-card__note">For students enrolled in this course.</p>
+                </div>
+              ) : null}
+
               {cohort?.joiningLink ? (
                 <>
                   <p>Use this link for every session. Save it now.</p>
