@@ -69,32 +69,37 @@ export default function AuthForms() {
 
   return (
     <>
-      <div className="account-tabs">
-        <button
-          type="button"
-          className={`btn btn--sm ${mode === "login" ? "btn--primary" : "btn--ghost"}`}
-          onClick={() => {
-            setMode("login");
-            setErrors({});
-            setMessage(null);
-          }}
-        >
-          Sign in
-        </button>
-        <button
-          type="button"
-          className={`btn btn--sm ${mode === "signup" ? "btn--primary" : "btn--ghost"}`}
-          onClick={() => {
-            setMode("signup");
-            setErrors({});
-            setMessage(null);
-          }}
-        >
-          Create account
-        </button>
+      {/**
+       * ⚠️ A SEGMENTED CONTROL, NOT TWO BUTTONS. Two primary/ghost buttons side by side read
+       * as "do this, or do that" — an action pair — so people click one expecting to have
+       * submitted something. A single track with a moving thumb reads as a state, which is
+       * what this is: the same form, asking for one more field.
+       */}
+      <div className="auth-switch" role="tablist" aria-label="Sign in or create an account">
+        {(
+          [
+            ["login", "Sign in"],
+            ["signup", "Create account"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={mode === value}
+            className={`auth-switch__btn${mode === value ? " is-active" : ""}`}
+            onClick={() => {
+              setMode(value);
+              setErrors({});
+              setMessage(null);
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      <form className="course-form" onSubmit={onSubmit} noValidate>
+      <form className="course-form auth-form" onSubmit={onSubmit} noValidate>
         {mode === "signup" ? (
           <div className="field">
             <label htmlFor={`${uid}-fullName`}>
@@ -140,11 +145,11 @@ export default function AuthForms() {
           {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
 
-        <p className="course-form__note">
-          Forgot your password? Email{" "}
-          <a href="mailto:support@innovgeist.com">support@innovgeist.com</a> or call{" "}
-          <a href="tel:+918127273162">+91 81272 73162</a>.
-        </p>
+        {mode === "signup" ? (
+          <p className="course-form__note">
+            Use the same email you paid with and your enrolments will be waiting.
+          </p>
+        ) : null}
 
         {message ? (
           <p className="form__status" data-state="error" role="status" aria-live="polite">
