@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Poppins } from "next/font/google";
+import LanguageToggle from "@/components/site/LanguageToggle";
 import ScrollEffects from "@/components/site/ScrollEffects";
 import { organizationJsonLd } from "@/lib/seo";
 import "@/styles/site.css";
@@ -105,6 +106,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        {/**
+         * ⚠️ IN THE ROOT LAYOUT, NOT IN A HEADER, BECAUSE THERE IS NO ONE HEADER. This site
+         * has five: `SiteHeader`, the `course-bar` repeated across the course and account
+         * pages, `LegalLayout`'s, and the admin panel's. Adding the control to each is four
+         * more places for it to be forgotten on the next page somebody writes — and the
+         * pages most likely to need Hindi are the checkout and the policies, which use the
+         * plainest headers of the set.
+         */}
+        <LanguageToggle />
         <ScrollEffects />
       </body>
     </html>

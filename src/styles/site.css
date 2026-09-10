@@ -1954,3 +1954,67 @@ a.contact__v:hover { color: var(--navy-200); }
 .site-footer__legal a:hover { color: var(--on-dark); text-decoration: underline; }
 
 .site-footer__legal + .site-footer__bottom { padding-top: var(--sp-4); }
+
+/* ---------------------------------------------------------------------------
+ * Language toggle (EN / हिं) + suppressing Google's translator chrome
+ * ------------------------------------------------------------------------- */
+
+/**
+ * ⚠️ EVERY RULE IN THIS FIRST BLOCK IS UNDOING SOMETHING GOOGLE'S WIDGET DOES TO THE PAGE,
+ * and none of it can be turned off through the widget's own options.
+ *
+ * The banner is the important one: the widget injects a fixed iframe across the top of the
+ * viewport and sets an inline `top: 40px` on `<body>` to make room for it. That pushes the
+ * sticky header off-screen and leaves a white strip above the hero on every translated
+ * page. `!important` throughout because the values it fights are inline styles.
+ */
+.goog-te-banner-frame,
+.goog-te-gadget-icon,
+#google_translate_element,
+body > .skiptranslate { display: none !important; }
+
+body { top: 0 !important; }
+
+/* The hover tooltip that offers the original wording, and the yellow wash Google paints
+   over any phrase it has swapped. Both are debugging aids for a translator, not something
+   a parent reading a fee page should ever see. */
+.goog-tooltip, .goog-tooltip:hover, #goog-gt-tt { display: none !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }
+
+/**
+ * ⚠️ FIXED, BOTTOM-RIGHT, AND BELOW EVERY MODAL. At z-index 110 it clears the sticky header
+ * (100) so it stays reachable while scrolling, and sits under the promo, enrolment and
+ * set-password overlays (120 / 320 / 400) — a language pill floating on top of a dimmed
+ * backdrop reads as part of the dialog and invites a click that does nothing useful.
+ */
+.lang {
+  position: fixed; z-index: 110;
+  right: var(--sp-4); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
+  display: flex; gap: 2px; padding: 3px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--bg); box-shadow: var(--shadow-md);
+}
+
+.lang__btn {
+  min-width: 2.5rem; padding: .32rem .6rem;
+  border: 0; border-radius: 999px;
+  background: none; color: var(--text-muted);
+  font: inherit; font-size: .8rem; font-weight: 700; line-height: 1.4;
+  cursor: pointer;
+  transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.lang__btn:hover:not(:disabled) { background: var(--bg-tint); color: var(--navy-800); }
+.lang__btn.is-active { background: var(--navy-900); color: var(--on-dark); }
+/* The widget is still downloading. Dimmed rather than hidden, so the control does not
+   appear late and shift on a slow connection. */
+.lang__btn:disabled { opacity: .5; cursor: default; }
+.lang__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Devanagari sits on a taller body than Latin at the same size; without the nudge the
+   two labels look like different type sizes side by side. */
+.lang__btn[lang="hi"] { font-size: .88rem; }
+
+@media (max-width: 40rem) {
+  .lang { right: var(--sp-3); bottom: calc(var(--sp-3) + env(safe-area-inset-bottom)); }
+  .lang__btn { min-width: 2.25rem; padding: .3rem .5rem; }
+}
