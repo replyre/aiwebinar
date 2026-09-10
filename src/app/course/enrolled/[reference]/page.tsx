@@ -3,6 +3,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import SiteFooter from "@/components/site/SiteFooter";
+import CourseImage from "@/components/course/CourseImage";
+import MentorCard from "@/components/account/MentorCard";
 import PayNowButton from "@/components/course/PayNowButton";
 import QuickAccountCreate from "@/components/account/QuickAccountCreate";
 import { ACCOUNT_COOKIE, verifyAccountToken } from "@/lib/account-auth";
@@ -15,6 +17,7 @@ import {
 } from "@/lib/course";
 import { getCohortById, getPublishedCourse } from "@/lib/courses-server";
 import { getEnrolmentByReference } from "@/lib/enrolments-server";
+import { COMPANY } from "@/lib/legal";
 
 /**
  * "You're in, and here's what happens next."
@@ -63,8 +66,16 @@ export default async function EnrolledPage({ params }: Props) {
   const signedIn = Boolean(verifyAccountToken(token));
   const hasAccount = signedIn ? true : Boolean(await getAccountByEmail(enrolment.guardian.email));
 
+  const tone = paid ? "ok" : status === "failed" ? "bad" : "warn";
+  const banner = course?.images?.hero ?? course?.images?.thumbnail ?? null;
+  const firstName = enrolment.student.fullName.split(" ")[0];
+
   return (
     <>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+
       <header className="course-bar">
         <div className="container course-bar__inner">
           <Link className="course-bar__brand" href="/" aria-label="Innovgeist — home">
@@ -78,154 +89,73 @@ export default async function EnrolledPage({ params }: Props) {
               decoding="async"
             />
           </Link>
+          <div className="course-bar__right">
+            <Link className="btn btn--ghost btn--sm" href="/account/dashboard">
+              My account
+            </Link>
+          </div>
         </div>
       </header>
 
-      <main id="main" className="section">
-        <div className="container enrolled">
-          <div className="enrolled__head">
-            <span
-              className={`enrolled__tick${
-                paid ? "" : status === "failed" ? " enrolled__tick--error" : " enrolled__tick--warn"
-              }`}
-              aria-hidden="true"
-            >
-              <svg className="icon" viewBox="0 0 24 24">
+      <main id="main" className="conf">
+        <div className="conf__bg" aria-hidden="true" />
+
+        <div className="container">
+          {/**
+           * ⚠️ THE STATUS DECIDES EVERY WORD IN THIS BLOCK, and it has to. A "you're in!"
+           * headline above an unpaid enrolment is the single most expensive thing this page
+           * could say — the guardian closes the tab believing a seat is held, and finds out
+           * it never was on the morning of the first class.
+           */}
+          <div className="conf__hero">
+            <div className="conf__intro">
+              <span className={`dash-tag dash-tag--${tone} conf__tag`}>
+                {paid
+                  ? "Enrollment confirmed"
+                  : status === "failed"
+                    ? "Payment didn't go through"
+                    : "Payment pending"}
+              </span>
+
+              <h1 className="conf__title">
+                {paid
+                  ? `${firstName} is in.`
+                  : status === "failed"
+                    ? "Almost there — payment didn't complete."
+                    : "Almost there — finish your payment."}
+              </h1>
+
+              <p className="conf__lede">
                 {paid ? (
-                  <path d="M20 6 9 17l-5-5" />
-                ) : status === "failed" ? (
                   <>
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
+                    {course ? course.title : "The course"}
+                    {cohort ? ` · ${cohort.name}` : ""}
+                    {days !== null && days >= 0 ? (
+                      <>
+                        {" "}
+                        — starting{" "}
+                        <strong>
+                          {days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`}
+                        </strong>
+                        .
+                      </>
+                    ) : (
+                      " — we'll confirm the start date shortly."
+                    )}
                   </>
                 ) : (
                   <>
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3.5 2" />
+                    {course ? course.title : "The course"} — no seat is held until payment
+                    completes.
                   </>
                 )}
-              </svg>
-            </span>
-            <p className="eyebrow">
-              {paid
-                ? "Enrollment confirmed"
-                : status === "failed"
-                  ? "Payment didn't go through"
-                  : "Payment pending"}
-            </p>
-            <h1 className="section__title">
-              {paid
-                ? `${enrolment.student.fullName.split(" ")[0]} is in.`
-                : status === "failed"
-                  ? "Almost there — payment didn't complete."
-                  : "Almost there — finish your payment."}
-            </h1>
-            <p className="section__lede">
-              {paid ? (
-                <>
-                  {course ? course.title : "The course"}
-                  {cohort ? ` · ${cohort.name}` : ""}
-                  {days !== null && days >= 0 ? (
-                    <>
-                      {" "}
-                      — starting{" "}
-                      <strong>
-                        {days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`}
-                      </strong>
-                      .
-                    </>
-                  ) : (
-                    " — we'll confirm the start date shortly."
-                  )}
-                </>
-              ) : (
-                <>
-                  {course ? course.title : "The course"} — no seat is held until payment
-                  completes.
-                </>
-              )}
-            </p>
-          </div>
+              </p>
 
-          {canRetry ? (
-            <div className="enrolled__card enrolled__card--muted enrolled__retry">
-              <h2>{formatPrice(enrolment.payment.amount)} due</h2>
-              <PayNowButton reference={enrolment.reference} label="Complete payment" />
-            </div>
-          ) : null}
-
-          <div className="enrolled__grid">
-            <section className="enrolled__card">
-              <h2>Your four Sundays</h2>
-              {dated.length ? (
-                <ol className="enrolled__sessions">
-                  {dated.map((session) => (
-                    <li key={session.n}>
-                      <span className="enrolled__week">Week {session.n}</span>
-                      <span className="enrolled__when">
-                        <strong>{formatSessionDate(session.startsAt)}</strong>
-                        {formatSessionTime(session.startsAt)}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="enrolled__pending">
-                  Dates are being finalised. We&rsquo;ll send them to your WhatsApp on{" "}
-                  <strong>{enrolment.guardian.phone}</strong> as soon as they&rsquo;re set.
-                </p>
-              )}
-            </section>
-
-            <section className="enrolled__card">
-              <h2>Joining the class</h2>
-              {cohort?.joiningLink ? (
-                <>
-                  <p>Use this link for every session. Save it now.</p>
-                  <a
-                    className="btn btn--secondary btn--block"
-                    href={cohort.joiningLink}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Open the class link
-                  </a>
-                </>
-              ) : (
-                <p className="enrolled__pending">
-                  Your class link comes on <strong>WhatsApp</strong>, to{" "}
-                  <strong>{enrolment.guardian.phone}</strong>, before the first session — along
-                  with a reminder the day before.
-                </p>
-              )}
-            </section>
-
-            <section className="enrolled__card">
-              <h2>Before the first class</h2>
-              <ul className="enrolled__list">
-                <li>A laptop or phone with internet.</li>
-                <li>
-                  The syllabus or textbook for <strong>one</strong> subject — in Week 1{" "}
-                  {enrolment.student.fullName.split(" ")[0]} picks the subject to work on for
-                  all four weeks.
-                </li>
-                <li>Nothing to install, and no prior AI knowledge needed.</li>
-              </ul>
-            </section>
-
-            <section className="enrolled__card enrolled__card--muted">
-              <h2>Your enrollment</h2>
-              <dl className="enrolled__facts">
+              <dl className="conf__facts">
                 <div>
                   <dt>Student</dt>
                   <dd>
-                    {enrolment.student.fullName} · Class {enrolment.student.class}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Guardian</dt>
-                  <dd>
-                    {enrolment.guardian.fullName} ({enrolment.guardian.relationship})
+                    {enrolment.student.fullName} &middot; Class {enrolment.student.class}
                   </dd>
                 </div>
                 <div>
@@ -235,19 +165,129 @@ export default async function EnrolledPage({ params }: Props) {
                   </dd>
                 </div>
                 <div>
-                  <dt>{paid ? "Paid" : "Amount"}</dt>
+                  <dt>{paid ? "Paid" : "Amount due"}</dt>
                   <dd>{formatPrice(enrolment.payment.amount)}</dd>
                 </div>
               </dl>
-              <p className="enrolled__note">
+            </div>
+
+            {banner ? (
+              <div className="conf__media">
+                <CourseImage image={banner} sizes="(max-width: 62rem) 92vw, 26rem" priority />
+              </div>
+            ) : null}
+          </div>
+
+          {canRetry ? (
+            <div className="conf__due">
+              <div>
+                <strong>{formatPrice(enrolment.payment.amount)} due</strong>
+                <span>
+                  {status === "failed"
+                    ? "The last attempt didn't complete. Nothing was charged."
+                    : "Your seat is held only once this clears."}
+                </span>
+              </div>
+              <PayNowButton reference={enrolment.reference} label="Complete payment" />
+            </div>
+          ) : null}
+
+          <div className="conf__grid">
+            <section className="conf-card">
+              <h2>
+                {dated.length ? `Your ${dated.length} sessions` : "Your schedule"}
+              </h2>
+              {dated.length ? (
+                <ol className="conf-card__sessions">
+                  {dated.map((session) => (
+                    <li key={session.n}>
+                      <span className="conf-card__week">Week {session.n}</span>
+                      <span className="conf-card__when">
+                        <strong>{formatSessionDate(session.startsAt)}</strong>
+                        {formatSessionTime(session.startsAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="conf-card__pending">
+                  Dates are being finalised. We&rsquo;ll send them to your WhatsApp on{" "}
+                  <strong>{enrolment.guardian.phone}</strong> as soon as they&rsquo;re set.
+                </p>
+              )}
+            </section>
+
+            <section className="conf-card">
+              <h2>Joining the class</h2>
+              {cohort?.joiningLink ? (
+                <>
+                  <p>Use this link for every session. Save it now.</p>
+                  <a
+                    className="btn btn--primary btn--block"
+                    href={cohort.joiningLink}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Open the class link
+                  </a>
+                </>
+              ) : (
+                <p className="conf-card__pending">
+                  Your class link comes on <strong>WhatsApp</strong>, to{" "}
+                  <strong>{enrolment.guardian.phone}</strong>, before the first session — along
+                  with a reminder the day before.
+                </p>
+              )}
+            </section>
+
+            <section className="conf-card">
+              <h2>Before the first class</h2>
+              <ul className="conf-card__list">
+                <li>A laptop or phone with internet.</li>
+                <li>
+                  The syllabus or textbook for <strong>one</strong> subject — in Week 1{" "}
+                  {firstName} picks the subject to work on for the rest of the course.
+                </li>
+                <li>Nothing to install, and no prior AI knowledge needed.</li>
+              </ul>
+            </section>
+
+            <section className="conf-card conf-card--muted">
+              <h2>Your enrollment</h2>
+              <dl className="conf-card__facts">
+                <div>
+                  <dt>Student</dt>
+                  <dd>
+                    {enrolment.student.fullName} &middot; Class {enrolment.student.class}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Guardian</dt>
+                  <dd>
+                    {enrolment.guardian.fullName}
+                    {enrolment.guardian.relationship ? ` (${enrolment.guardian.relationship})` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Contact</dt>
+                  <dd>{enrolment.guardian.phone}</dd>
+                </div>
+                <div>
+                  <dt>Reference</dt>
+                  <dd>
+                    <code>{enrolment.reference.slice(0, 8)}</code>
+                  </dd>
+                </div>
+              </dl>
+              <p className="conf-card__note">
                 Razorpay emails your payment receipt separately. Questions?{" "}
-                <a href="mailto:support@innovgeist.com">support@innovgeist.com</a> or{" "}
-                <a href="tel:+918127273162">+91 81272 73162</a>.
+                <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> or{" "}
+                <a href={`tel:${COMPANY.phoneHref}`}>{COMPANY.phone}</a>.
               </p>
             </section>
 
             {!hasAccount ? (
-              <section className="enrolled__card">
+              <section className="conf-card conf-card--wide">
                 <h2>Track this online</h2>
                 <QuickAccountCreate
                   fullName={enrolment.guardian.fullName}
@@ -256,6 +296,8 @@ export default async function EnrolledPage({ params }: Props) {
               </section>
             ) : null}
           </div>
+
+          <MentorCard />
         </div>
       </main>
 
