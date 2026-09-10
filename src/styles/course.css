@@ -1565,3 +1565,50 @@
  * cap and must not inherit one.
  */
 .conf-card--wide .acct-set { max-width: 26rem; }
+
+/**
+ * A filled brand glyph inside a button — the WhatsApp mark on the confirmation page.
+ * `.icon` is built for the site's stroked line icons (`fill: none; stroke: currentColor`),
+ * which renders a solid logo path as an unreadable tangle of outlines.
+ */
+.icon--solid { fill: currentColor; stroke: none; }
+
+/**
+ * The WhatsApp group block, stacked above the class link inside "Joining the class".
+ * The rule below the note is what keeps the two halves legible as separate answers to
+ * "how do I get in" — without it they read as one run-on paragraph with a button in it.
+ */
+.conf-card__group { margin-bottom: var(--sp-4); }
+.conf-card__group .conf-card__note {
+  margin: var(--sp-3) 0 var(--sp-4);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+/* Last child when the batch has no joining link yet — nothing follows, so the rule
+   would be a line under the card's own final line. */
+.conf-card__group:last-child .conf-card__note {
+  margin-bottom: 0; padding-bottom: 0; border-bottom: 0;
+}
+
+/**
+ * WhatsApp green, not the site's accent blue. The group button is the one control on this
+ * page that leaves for another product, and the brand colour is what makes it recognisable
+ * before the label is read.
+ *
+ * ⚠️ DARK TEXT ON THE GREEN, NOT WHITE. #25D366 is a light colour — white on it measures
+ * 1.98:1, nowhere near the 4.5:1 AA needs, and it is the single most common mistake with
+ * this brand. The site's navy on the same green is 8.3:1, so the button keeps the exact
+ * WhatsApp green and is still readable in sunlight on a phone, which is where it is used.
+ */
+.btn--whatsapp {
+  --wa: #25D366;
+  --wa-strong: #1EBE5A;
+  background: var(--wa); border-color: var(--wa); color: var(--navy-900);
+  font-weight: 700;
+  box-shadow: 0 6px 16px -8px rgba(37, 211, 102, .7);
+}
+.btn--whatsapp:hover {
+  background: var(--wa-strong); border-color: var(--wa-strong); color: var(--navy-900);
+  box-shadow: 0 10px 22px -10px rgba(37, 211, 102, .8);
+}
+.btn--whatsapp:focus-visible { outline: 2px solid var(--navy-900); outline-offset: 2px; }
