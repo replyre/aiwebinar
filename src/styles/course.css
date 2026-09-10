@@ -1409,3 +1409,159 @@
 @media (min-width: 62rem) {
   .conf__hero { grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); }
 }
+
+/* ---------------------------------------------------------------------------
+ * Set-password gate — the one modal on this site with no way out
+ * ------------------------------------------------------------------------- */
+
+/**
+ * ⚠️ A HIGHER `z-index` THAN `.enrol-modal` (320), AND IT HAS TO BE. The two can never
+ * appear on the same page today — one is the course page, one is the confirmation — but a
+ * blocking box that something else can cover is worse than no box at all, because the page
+ * is then unusable *and* the reason is off-screen.
+ *
+ * The scroll model is copied wholesale from `.enrol-modal`: the overlay scrolls, the panel
+ * is `margin: auto` rather than `align-items: center`, so a short panel sits centred and a
+ * tall one can still be reached from the top. The comment above that block has the full
+ * reasoning; it applies here unchanged.
+ */
+.gate {
+  position: fixed; inset: 0; z-index: 400;
+  display: grid; justify-items: center; align-items: start;
+  padding: var(--gutter) var(--gutter) calc(var(--gutter) + env(safe-area-inset-bottom));
+  overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/**
+ * ⚠️ NO CLICK HANDLER ON THIS ELEMENT — unlike `.enrol-modal__backdrop`, which closes.
+ * Darker, too: at .82 the confirmation behind stayed readable enough that people tried to
+ * interact with it and concluded the page was broken. Opaque enough to read as "deal with
+ * this first" is the honest signal.
+ */
+.gate__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(11, 31, 56, .92);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: enrol-fade .2s var(--ease);
+}
+
+.gate__panel {
+  position: relative;
+  width: min(27rem, 100%);
+  margin: auto;
+  border-radius: var(--r-xl); background: var(--bg);
+  box-shadow: var(--shadow-lg);
+  /* The band bleeds to the panel's rounded corners; without this it squares them off. */
+  overflow: hidden;
+  animation: enrol-rise .24s var(--ease);
+}
+
+/**
+ * The navy band. It is doing the same job as `.enrol-modal__aside` — carrying the site into
+ * a box that would otherwise look like a browser prompt — and it uses the same recipe: one
+ * off-centre radial highlight over `--navy-900`, so the two read as siblings.
+ */
+.gate__head {
+  padding: var(--sp-6) var(--sp-6) var(--sp-5);
+  background:
+    radial-gradient(420px 220px at 18% -20%, rgba(37, 99, 235, .38), transparent 64%),
+    var(--navy-900);
+  color: var(--on-dark);
+  text-align: center;
+}
+
+.gate__mark {
+  display: grid; place-items: center;
+  width: 46px; height: 46px; margin: 0 auto var(--sp-4);
+  border-radius: 50%;
+  /* Translucent white, not a solid fill — a flat disc on the gradient reads as a sticker
+     laid on top, this one sits in the same light as the band behind it. */
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .22);
+  color: var(--on-dark);
+}
+.gate__mark svg {
+  width: 22px; height: 22px;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+/* The tick carries the meaning and the frame is context, so the tick is drawn heavier —
+   at 22px an even weight lets the rectangle's four sides shout down the three strokes
+   inside it. */
+.gate__mark svg path:last-child { stroke-width: 2.1; }
+
+.gate__head .eyebrow { margin: 0 0 .4rem; }
+
+.gate__title {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: 1.4rem; font-weight: 800; letter-spacing: -.015em;
+  color: var(--on-dark);
+}
+
+.gate__body { padding: var(--sp-6); }
+
+@media (max-width: 30rem) {
+  .gate__head { padding: var(--sp-5) var(--sp-5) var(--sp-4); }
+  .gate__body { padding: var(--sp-5); }
+  .gate__title { font-size: 1.25rem; }
+}
+
+/* ---------------------------------------------------------------------------
+ * The set-a-password form — shared by the gate and the inline offer
+ * ------------------------------------------------------------------------- */
+
+/**
+ * ⚠️ INSIDE THE GATE THE FORM'S OWN CARD IS STRIPPED, NOT RESTYLED. `.course-form` is a
+ * bordered, shadowed panel because on the course page it stands alone on the background.
+ * In the gate it is already inside one, and a card drawn inside a card reads as a second,
+ * nested dialog — the eye spends a moment deciding which box the Save button belongs to.
+ * Inline on an unpaid confirmation it keeps the card, because there it *is* the card.
+ */
+.gate__body .acct-set {
+  padding: 0; border: 0; background: none; box-shadow: none;
+}
+
+.acct-set__intro {
+  margin: 0 0 var(--sp-5);
+  font-size: .9rem; line-height: 1.55; color: var(--text-muted);
+}
+.acct-set__intro strong { color: var(--navy-800); font-weight: 700; }
+
+.acct-set__field { margin-bottom: var(--sp-4); }
+.acct-set__field > label {
+  display: block; margin-bottom: .35rem;
+  font-size: .78rem; font-weight: 700; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.acct-set__field input {
+  display: block; width: 100%;
+  padding: .62rem .75rem;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--bg); color: var(--text);
+  /* 1rem for the same reason as the enrolment modal: anything smaller and iOS zooms the
+     page on focus, which inside a box that cannot be closed leaves a phone visitor
+     scrolled sideways with the button off-screen. */
+  font: inherit; font-size: 1rem;
+}
+.acct-set__field input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+/* The confirm field above already contributes its own bottom margin, so the error only
+   needs the gap below it — a negative pull-up here would collapse differently depending on
+   which field failed. */
+.acct-set__error { margin: 0 0 var(--sp-4); }
+
+.acct-set__submit { width: 100%; justify-content: center; }
+
+/**
+ * ⚠️ THE INLINE COPY IS CAPPED; THE GATE'S IS NOT. `.conf-card--wide` spans the whole
+ * confirmation grid, and two stacked password fields poured into that width are unreadable
+ * — the label sits a hand's width from the box it names, and a full-width Save button reads
+ * as a page banner rather than a control. The gate's panel is already 27rem, so it needs no
+ * cap and must not inherit one.
+ */
+.conf-card--wide .acct-set { max-width: 26rem; }
