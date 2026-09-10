@@ -7,6 +7,7 @@ import CourseImage from "@/components/course/CourseImage";
 import MentorCard from "@/components/account/MentorCard";
 import PayNowButton from "@/components/course/PayNowButton";
 import QuickAccountCreate from "@/components/account/QuickAccountCreate";
+import SetPasswordGate from "@/components/account/SetPasswordGate";
 import { ACCOUNT_COOKIE, verifyAccountToken } from "@/lib/account-auth";
 import { getAccountByEmail } from "@/lib/accounts-server";
 import {
@@ -65,6 +66,21 @@ export default async function EnrolledPage({ params }: Props) {
   const token = (await cookies()).get(ACCOUNT_COOKIE)?.value;
   const signedIn = Boolean(verifyAccountToken(token));
   const hasAccount = signedIn ? true : Boolean(await getAccountByEmail(enrolment.guardian.email));
+
+  /**
+   * ⚠️ THE PASSWORD STEP IS MANDATORY ONLY ONCE THE SEAT IS PAID FOR, AND OPTIONAL BEFORE.
+   *
+   * A guardian with no account and no password has exactly one route back to this page: the
+   * random 24-character link in a browser tab they are about to close. That is why the box
+   * over a paid confirmation does not close — losing it is losing the enrolment.
+   *
+   * The same box over a *pending or failed* payment would be the opposite: an unskippable
+   * form sitting on top of `PayNowButton`, which is the one control that page exists to
+   * offer. So the unpaid case keeps the old inline card — an offer, ignorable — and only
+   * the paid case blocks.
+   */
+  const mustSetPassword = paid && !hasAccount;
+  const offerAccount = !paid && !hasAccount;
 
   const tone = paid ? "ok" : status === "failed" ? "bad" : "warn";
   const banner = course?.images?.hero ?? course?.images?.thumbnail ?? null;
@@ -286,7 +302,7 @@ export default async function EnrolledPage({ params }: Props) {
               </p>
             </section>
 
-            {!hasAccount ? (
+            {offerAccount ? (
               <section className="conf-card conf-card--wide">
                 <h2>Track this online</h2>
                 <QuickAccountCreate
@@ -300,6 +316,15 @@ export default async function EnrolledPage({ params }: Props) {
           <MentorCard />
         </div>
       </main>
+
+      {/* Last in the tree, over everything, and rendered only when there is genuinely no
+          way back to this enrolment without it. */}
+      {mustSetPassword ? (
+        <SetPasswordGate
+          fullName={enrolment.guardian.fullName}
+          email={enrolment.guardian.email}
+        />
+      ) : null}
 
       <SiteFooter />
     </>
