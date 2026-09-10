@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
@@ -18,6 +19,21 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
  */
 export default function ScrollEffects() {
   const reduceMotion = useReducedMotion();
+
+  /**
+   * ⚠️ EVERY EFFECT BELOW MUST DEPEND ON THE PATHNAME, AND THE REASON IS NOT OBVIOUS. This
+   * component sits in the root layout, which React keeps mounted across a client-side
+   * navigation — only the page subtree underneath is swapped. So an effect that queries the
+   * document once on mount observes the *first* page's nodes and is never given a second
+   * chance: navigate to `/` from anywhere and its ~90 `[data-reveal]` elements are never
+   * observed, while `.js [data-reveal] { opacity: 0 }` keeps holding them invisible. The
+   * whole home page renders blank.
+   *
+   * It hides from a hard refresh, which remounts the layout and works perfectly — so it
+   * presents as "the home page sometimes has no content", which sounds like a data-fetching
+   * fault and is not one.
+   */
+  const pathname = usePathname();
 
   /* ------------------------------ reveal on scroll ----------------------------- */
   useEffect(() => {
@@ -92,7 +108,7 @@ export default function ScrollEffects() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, pathname]);
 
   /* --------------------------------- counters ---------------------------------- */
   useEffect(() => {
@@ -140,7 +156,7 @@ export default function ScrollEffects() {
       observer.disconnect();
       for (const id of frames) cancelAnimationFrame(id);
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, pathname]);
 
   /* ------------------------------ active nav link ------------------------------ */
   useEffect(() => {
@@ -194,7 +210,7 @@ export default function ScrollEffects() {
 
     for (const section of sections) observer.observe(section);
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
 
   return null;
 }

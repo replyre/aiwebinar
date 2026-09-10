@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { LEGAL_LINKS } from "@/lib/legal";
+
 export default function SiteFooter() {
   return (
     <footer className="site-footer">
@@ -48,6 +51,14 @@ export default function SiteFooter() {
           </nav>
         </div>
     
+        {/* Razorpay's website review checks that all six policy pages are reachable, and
+            reachable from anywhere — so they live in the footer rather than on one page. */}
+        <nav className="site-footer__legal" aria-label="Policies">
+          {LEGAL_LINKS.map((link) => (
+            <Link key={link.href} href={link.href}>{link.label}</Link>
+          ))}
+        </nav>
+
         <div className="site-footer__bottom">
           <p>&copy; {new Date().getFullYear()} Innovgeist Technologies Pvt. Ltd. &middot; All rights reserved.</p>
           {/* TODO: confirm the official LinkedIn company URL before launch. */}
