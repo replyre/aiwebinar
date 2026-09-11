@@ -16,16 +16,33 @@ export default function PayNowButton({
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [scriptFailed, setScriptFailed] = useState(false);
 
   useEffect(() => {
     if (window.Razorpay) return;
-    if (document.querySelector("script[data-razorpay-checkout]")) return;
+    const existing = document.querySelector<HTMLScriptElement>("script[data-razorpay-checkout]");
+    if (existing) {
+      existing.addEventListener("error", () => setScriptFailed(true));
+      return;
+    }
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     script.dataset.razorpayCheckout = "";
+    script.onerror = () => setScriptFailed(true);
     document.body.appendChild(script);
   }, []);
+
+  /** Poll briefly for `window.Razorpay` rather than failing on the first click — the script
+   *  usually only needs another moment, not a retry, on a normal connection. */
+  async function waitForRazorpay(timeoutMs = 5000): Promise<boolean> {
+    const start = Date.now();
+    while (!window.Razorpay) {
+      if (Date.now() - start > timeoutMs) return false;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    return true;
+  }
 
   async function onClick() {
     setBusy(true);
@@ -61,13 +78,33 @@ export default function PayNowButton({
         return;
       }
 
-      if (!body.order || !window.Razorpay) {
-        setMessage("The payment window is still loading. Try again in a moment.");
+      if (!body.order) {
+        setMessage("Could not start the payment. Please try again.");
         setBusy(false);
         return;
       }
 
-      const checkout = new window.Razorpay({
+      if (!window.Razorpay) {
+        const ready = await waitForRazorpay();
+        if (!ready) {
+          setMessage(
+            scriptFailed
+              ? "Could not load the payment window. Check your connection and refresh the page."
+              : "The payment window is taking longer than usual to load. Please refresh the page and try again.",
+          );
+          setBusy(false);
+          return;
+        }
+      }
+
+      const RazorpayCheckout = window.Razorpay;
+      if (!RazorpayCheckout) {
+        setMessage("Could not load the payment window. Check your connection and refresh the page.");
+        setBusy(false);
+        return;
+      }
+
+      const checkout = new RazorpayCheckout({
         key: body.order.keyId,
         order_id: body.order.orderId,
         amount: body.order.amount,
