@@ -162,6 +162,35 @@ export async function POST(request: Request): Promise<NextResponse<EnrolResponse
           savedAmount: baseAmount - discounted,
         };
       }
+
+      /**
+       * ⚠️ THE CODE'S BATCH OVERRIDES WHATEVER THE BROWSER PICKED, AND IT IS NOT CHECKED
+       * WITH `isRegistrable`. A school hands one code to its own students so they end up in
+       * one batch — that has to hold whether or not a public radio button was on screen, so
+       * this wins over `enrolment.cohortId`.
+       *
+       * Skipping the registrable check is deliberate twice over. A school's batch is
+       * `unlisted` precisely so it is *not* publicly registrable, and a full batch must
+       * still be assigned rather than dropped: the seat claim at payment time is what turns
+       * a full batch into an overflow placement, and it can only do that if it knows which
+       * batch was intended. Dropping to `null` here would throw that away and leave a paid
+       * student looking like an ordinary unbatched one.
+       *
+       * Only the course has to match — a batch belonging to another course is a
+       * misconfigured coupon, and enrolling somebody into the wrong product is worse than
+       * ignoring the placement.
+       */
+      if (coupon.cohortId) {
+        const couponCohort = await getCohortById(coupon.cohortId);
+        if (couponCohort && couponCohort.courseSlug === course.slug) {
+          cohort = couponCohort;
+        } else {
+          console.warn(
+            `[enrol] coupon ${coupon.code} names batch ${coupon.cohortId}, which is ` +
+              `missing or belongs to another course — placement ignored`,
+          );
+        }
+      }
     } else {
       console.warn(
         `[enrol] coupon "${normaliseCode(enrolment.couponCode)}" ignored: ${rejection ?? "not_found"}`,

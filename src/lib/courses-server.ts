@@ -33,6 +33,7 @@ interface CohortDoc {
   seatsTaken: number;
   enrolmentClosesAt: Date | null;
   status: CohortStatus;
+  unlisted?: boolean;
 }
 
 let indexesEnsured = false;
@@ -76,6 +77,7 @@ function toCohort(doc: CohortDoc): Cohort {
     seatsTaken: doc.seatsTaken,
     enrolmentClosesAt: doc.enrolmentClosesAt ?? null,
     status: doc.status,
+    unlisted: doc.unlisted ?? false,
   };
 }
 
@@ -134,9 +136,17 @@ export async function getOpenCohorts(courseSlug: string): Promise<Cohort[]> {
   if (!mongoConfigured) return [];
   try {
     const db = await getDb();
+    /**
+     * ⚠️ `unlisted` BATCHES ARE EXCLUDED HERE, AND THIS IS THE ONLY PLACE THAT MATTERS.
+     * This feeds the batch picker on the course page, so anything it returns is offered to
+     * every public buyer. A school's batch has to be `open` to take seats, which without
+     * this filter would also put it in that radio list and drop strangers into a cohort
+     * bought with somebody else's code. `getCohortById` is deliberately *not* filtered —
+     * that is how a coupon reaches the batch it names.
+     */
     const docs = await db
       .collection<CohortDoc>("cohorts")
-      .find({ courseSlug, status: "open" })
+      .find({ courseSlug, status: "open", unlisted: { $ne: true } })
       .sort({ "sessions.0.startsAt": 1 })
       .limit(12)
       .toArray();

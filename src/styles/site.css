@@ -862,7 +862,7 @@ button { font: inherit; color: inherit; }
               box-shadow .22s var(--ease), transform .22s var(--ease);
 }
 .layer:hover { border-color: rgba(111, 163, 224, .45); transform: translateX(4px); }
-.layer.is-open {
+.layer[data-open="true"] {
   border-color: rgba(111, 163, 224, .6);
   background: linear-gradient(150deg, rgba(37, 99, 235, .2), rgba(255, 255, 255, .03) 60%);
   box-shadow: 0 22px 50px -28px rgba(37, 99, 235, .8);
@@ -888,14 +888,14 @@ button { font: inherit; color: inherit; }
 .layer__text h3 { font-size: clamp(1.02rem, 1.5vw, 1.2rem); margin-bottom: .2rem; }
 .layer__text p { font-size: .88rem; color: var(--on-dark-muted); margin: 0; }
 .layer__chev { color: var(--navy-300); transition: transform .28s var(--ease); }
-.layer.is-open .layer__chev { transform: rotate(180deg); }
+.layer[data-open="true"] .layer__chev { transform: rotate(180deg); }
 
 .layer__body {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows .32s var(--ease);
 }
-.layer.is-open .layer__body { grid-template-rows: 1fr; }
+.layer[data-open="true"] .layer__body { grid-template-rows: 1fr; }
 .layer__inner { overflow: hidden; }
 .layer__pad {
   padding: 0 clamp(1.1rem, 2vw, 1.75rem) clamp(1.2rem, 2vw, 1.6rem);
@@ -1171,21 +1171,300 @@ button { font: inherit; color: inherit; }
 }
 .gallery__btn:hover .gallery__zoom { opacity: 1; transform: scale(1); }
 
-.event-card {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center; gap: var(--sp-5);
-  padding: clamp(1.25rem, 2vw, 1.6rem) clamp(1.25rem, 2.2vw, 1.9rem);
-  margin-bottom: var(--sp-6);
+/* ------------------------------ Events rail ---------------------------- */
+/* A scroll-snap rail, not a transformed track. `EventsRail.tsx` explains why the
+   two carousels on this site are built differently; the short version is that these
+   cards are a fixed width on a canvas that runs to 1920px, so the number on screen
+   changes with the viewport and there is no single correct step to transform by. */
+.rail { position: relative; }
+.rail__track {
+  display: flex; gap: var(--sp-5);
+  margin: 0; padding: 0 0 var(--sp-4); list-style: none;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  /* The rail is inside `.container`, so a snapped card should land on the container's
+     content edge — not hard against the viewport. */
+  scroll-padding-inline-start: 0;
+  /* The buttons and dots are the affordance; a scrollbar under the cards is noise. */
+  scrollbar-width: none;
+}
+.rail__track::-webkit-scrollbar { display: none; }
+.rail__track:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-lg); }
+.rail__item {
+  flex: 0 0 auto;
+  width: clamp(17.5rem, 78vw, 28.5rem);
+  scroll-snap-align: start;
+}
+
+.ecard {
+  position: relative; height: 100%;
+  display: flex; flex-direction: column;
+  background: var(--bg);
   border: 1px solid var(--border); border-radius: var(--r-lg);
-  background: linear-gradient(120deg, var(--navy-50), var(--bg) 55%);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
 }
-.event-card__ico {
+.ecard:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-mid); }
+/* The whole card is the hit target, but only the title is the link — so the
+   accessible name stays the event name rather than the entire card's text. */
+.ecard__link::after { content: ""; position: absolute; inset: 0; }
+.ecard__link { color: inherit; text-decoration: none; }
+.ecard:focus-within { border-color: var(--accent); box-shadow: var(--shadow-glow); }
+
+.ecard__media { position: relative; background: var(--navy-800); }
+.ecard__media img {
+  display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
+  transition: transform .55s var(--ease);
+}
+.ecard:hover .ecard__media img { transform: scale(1.04); }
+.ecard__role {
+  position: absolute; left: .9rem; bottom: .9rem;
+  padding: .38rem .8rem; border-radius: 999px;
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  font-size: .74rem; font-weight: 600; letter-spacing: .04em;
+  color: var(--navy-800);
+  box-shadow: var(--shadow-xs);
+}
+
+.ecard__body {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: var(--sp-5) clamp(1.1rem, 2vw, 1.5rem) clamp(1.2rem, 2vw, 1.5rem);
+  flex: 1;
+}
+.ecard__meta {
+  display: flex; flex-wrap: wrap; gap: .45rem;
+  margin: 0; font-size: .76rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
+}
+.ecard__title { font-size: 1.18rem; line-height: 1.3; margin: 0; }
+.ecard__where {
+  display: flex; align-items: center; gap: .5rem;
+  margin: 0; font-size: .86rem; color: var(--text-muted);
+}
+.ecard__where .icon { color: var(--text-soft); flex: none; }
+.ecard__crest {
+  display: grid; place-items: center; flex: none;
+  width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: #fff; border: 1px solid var(--border); overflow: hidden;
+}
+.ecard__crest img { display: block; width: 1.6rem; height: auto; }
+.ecard__summary { margin: 0; font-size: .92rem; color: var(--text-muted); }
+.ecard__cta {
+  display: flex; align-items: center; gap: .45rem;
+  margin: auto 0 0; padding-top: var(--sp-4);
+  font-size: .88rem; font-weight: 600; color: var(--accent);
+}
+.ecard__cta .icon { transition: transform .2s var(--ease); }
+.ecard:hover .ecard__cta .icon { transform: translateX(3px); }
+
+.rail__foot {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5);
+  margin-top: var(--sp-5);
+}
+.rail__dots { display: flex; gap: .4rem; }
+.rail__dot {
+  width: .5rem; height: .5rem; padding: 0;
+  border: 0; border-radius: 999px; background: var(--border-mid);
+  cursor: pointer;
+  transition: width .22s var(--ease), background-color .22s var(--ease);
+}
+.rail__dot[aria-current="true"] { width: 1.5rem; background: var(--accent); }
+.rail__nav { display: flex; gap: .5rem; }
+.rail__btn {
   display: grid; place-items: center;
-  width: 3rem; height: 3rem; border-radius: 14px;
-  background: var(--bg); border: 1px solid var(--border-mid); color: var(--accent);
+  width: 2.4rem; height: 2.4rem; padding: 0;
+  border: 1px solid var(--border-mid); border-radius: 50%;
+  background: var(--bg); color: var(--navy-700); cursor: pointer;
+  transition: border-color .18s var(--ease), color .18s var(--ease),
+              background-color .18s var(--ease), opacity .18s var(--ease);
 }
-.event-card h3 { font-size: 1.1rem; margin-bottom: .2rem; }
-.event-card p { font-size: .9rem; color: var(--text-muted); margin: 0; }
+.rail__btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
+.rail__btn:disabled { opacity: .35; cursor: default; }
+.rail__btn .icon { width: 1rem; height: 1rem; }
+
+/* --------------------------- Event call to action ---------------------- */
+.event-cta {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; gap: var(--sp-5) clamp(1.5rem, 4vw, 3rem);
+  margin-top: var(--sp-8);
+  padding: clamp(1.4rem, 2.4vw, 2rem) clamp(1.4rem, 2.6vw, 2.2rem);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: linear-gradient(120deg, var(--navy-50), var(--bg) 60%);
+}
+.event-cta h3 { font-size: 1.2rem; margin-bottom: .3rem; }
+.event-cta p { margin: 0; font-size: .92rem; color: var(--text-muted); max-width: 62ch; }
+.event-cta--lg { margin-top: 0; }
+.event-cta__actions { display: flex; flex-wrap: wrap; gap: .7rem; }
+
+/* ----------------------------- Event page ------------------------------ */
+.ehero {
+  padding-block: calc(var(--section-y) * .85);
+  background:
+    radial-gradient(90rem 40rem at 15% -10%, rgba(37, 99, 235, .3), transparent 60%),
+    linear-gradient(160deg, var(--navy-900), var(--navy-800) 55%, var(--navy-700));
+  color: var(--on-dark);
+}
+.ehero__inner {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .82fr);
+  gap: var(--sp-7) clamp(2rem, 5vw, 4.5rem); align-items: center;
+}
+.ehero__title {
+  font-size: clamp(1.9rem, 3.2vw, 2.7rem); color: var(--on-dark);
+  margin-bottom: var(--sp-4);
+  /* No `max-width` here: a venue name is one unbreakable unit and a ch cap forced it to
+     wrap early with a one-word last line. `balance` keeps the lines even if it does wrap. */
+  text-wrap: balance;
+}
+.ehero__lede { font-size: clamp(1rem, 1.4vw, 1.12rem); color: var(--on-dark-muted); margin: 0; max-width: 62ch; }
+.ehero__facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  gap: var(--sp-4) var(--sp-5); margin: var(--sp-6) 0 0;
+  padding-top: var(--sp-5); border-top: 1px solid var(--border-dark);
+}
+.ehero__facts dt {
+  font-size: .72rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--on-dark-soft); margin-bottom: .3rem;
+}
+.ehero__facts dd { margin: 0; font-size: .95rem; font-weight: 500; color: var(--on-dark); }
+.ehero__plate { margin: 0; border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-lg); }
+/* The source is a heavily compressed phone capture; a hairline of brand colour over the
+   top reads as a deliberate plate rather than as a photograph that went soft. */
+.ehero__plate::after {
+  content: ""; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px var(--border-dark-2); border-radius: var(--r-lg);
+}
+.ehero__plate { position: relative; }
+.ehero__plate img { display: block; width: 100%; height: auto; }
+
+/* -------------------------- Events index page -------------------------- */
+/* The index hero has no plate beside it, so the text is not competing for a
+   column and can run to a comfortable measure on its own. */
+.ehero--index .ehero__title { max-width: 22ch; }
+.ehero--index .ehero__lede { max-width: 68ch; }
+
+/* The newest event, promoted. Full width at any count — with two events on the
+   site a three-up grid would strand one card beside two empty columns. */
+.efeature {
+  position: relative;
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  align-items: stretch;
+  border: 1px solid var(--border); border-radius: var(--r-xl);
+  background: var(--bg); overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .25s var(--ease), border-color .25s var(--ease);
+}
+.efeature:hover { box-shadow: var(--shadow-md); border-color: var(--border-mid); }
+.efeature:focus-within { border-color: var(--accent); box-shadow: var(--shadow-glow); }
+.efeature__media { position: relative; background: var(--navy-800); }
+/* `height: 100%` on the image and `object-fit: cover` let the photo fill whatever
+   height the text column settles at, rather than the two columns disagreeing. */
+.efeature__media img {
+  display: block; width: 100%; height: 100%;
+  min-height: 20rem; object-fit: cover;
+  transition: transform .55s var(--ease);
+}
+.efeature:hover .efeature__media img { transform: scale(1.03); }
+.efeature__body {
+  display: flex; flex-direction: column; gap: .7rem;
+  padding: clamp(1.5rem, 3vw, 2.6rem);
+}
+.efeature__title { font-size: clamp(1.3rem, 2.2vw, 1.85rem); line-height: 1.28; margin: 0; }
+.efeature__lede { margin: 0; font-size: .97rem; color: var(--text-muted); }
+.efeature__facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--sp-4); margin: var(--sp-4) 0 0;
+  padding-top: var(--sp-5); border-top: 1px solid var(--border);
+}
+.efeature__facts dt {
+  font-size: .7rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text-soft); margin-bottom: .25rem;
+}
+.efeature__facts dd { margin: 0; font-size: .9rem; font-weight: 500; color: var(--text); }
+
+/* Everything after the feature. A wide row fills its line whether there is one
+   of them or nine, which a fixed-column grid does not. */
+.elist { display: grid; gap: var(--sp-5); }
+.erow {
+  position: relative;
+  display: grid; grid-template-columns: minmax(0, 21rem) minmax(0, 1fr);
+  align-items: stretch;
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: var(--bg); overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
+}
+.erow:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--border-mid); }
+.erow:focus-within { border-color: var(--accent); box-shadow: var(--shadow-glow); }
+.erow__media { background: var(--navy-800); }
+.erow__media img {
+  display: block; width: 100%; height: 100%;
+  min-height: 12.5rem; object-fit: cover;
+}
+.erow__body {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: clamp(1.2rem, 2.2vw, 1.8rem);
+}
+.erow__title { font-size: 1.22rem; line-height: 1.3; margin: 0; }
+.erow__summary { margin: 0; font-size: .92rem; color: var(--text-muted); }
+.erow__foot {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--sp-4); margin: auto 0 0; padding-top: var(--sp-4);
+}
+.erow__role {
+  padding: .34rem .75rem; border-radius: 999px;
+  background: var(--accent-tint); border: 1px solid var(--navy-100);
+  font-size: .74rem; font-weight: 600; color: var(--navy-700);
+}
+.erow__foot .ecard__cta { margin: 0; padding: 0; }
+
+.covered { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--sp-5); margin: 0; padding: 0; list-style: none; counter-reset: none; }
+.covered__item {
+  padding: clamp(1.3rem, 2.2vw, 1.8rem);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: var(--bg);
+}
+.covered__n {
+  display: block; font-family: var(--font-head); font-weight: 800;
+  font-size: .85rem; letter-spacing: .08em; color: var(--accent); margin-bottom: .7rem;
+}
+.covered__item h3 { font-size: 1.06rem; margin-bottom: .45rem; }
+.covered__item p { margin: 0; font-size: .91rem; color: var(--text-muted); }
+
+.host { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-6) clamp(1.5rem, 4vw, 3rem); align-items: start; }
+.host__crest {
+  display: grid; place-items: center; flex: none;
+  width: 7rem; height: 7rem; padding: .7rem; border-radius: 50%;
+  background: #fff; box-shadow: var(--shadow-md);
+}
+.host__crest img { display: block; width: 100%; height: auto; }
+.host__name { font-size: clamp(1.5rem, 2.6vw, 2.1rem); color: var(--on-dark); margin-bottom: .25rem; }
+.host__name-hi { font-size: 1.02rem; color: var(--navy-200); margin: 0 0 var(--sp-5); }
+.host__facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--sp-4) var(--sp-5); margin: 0 0 var(--sp-6);
+}
+.host__facts dt {
+  font-size: .72rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--on-dark-soft); margin-bottom: .3rem;
+}
+.host__facts dd { margin: 0; font-size: .93rem; color: var(--on-dark-muted); }
+
+.report {
+  margin: var(--sp-8) 0 0; padding: clamp(1.4rem, 2.6vw, 2.2rem);
+  border: 1px solid var(--border-dark); border-left: 3px solid var(--navy-400);
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+  background: rgba(255, 255, 255, .04);
+}
+.report__body { margin: 0 0 var(--sp-4); font-size: clamp(1rem, 1.5vw, 1.12rem); line-height: 1.75; color: var(--on-dark); }
+.report__by { font-size: .82rem; color: var(--on-dark-soft); }
+
+/* The shared gallery crops to 3:2, which is right for the hackathon set and wrong for
+   the school set — those are 2.2:1 panoramas of a full hall, and the whole point of
+   them is the width. */
+.event-gallery .gallery { grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+.event-gallery .gallery__btn img { aspect-ratio: 16 / 9; }
 
 /* ------------------------------- Lightbox ------------------------------ */
 .lightbox { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: var(--gutter); }
@@ -1624,9 +1903,20 @@ a.contact__v:hover { color: var(--navy-200); }
      none` on .is-visible, so turn the glyph inside it. */
   .ba__arrow { justify-self: center; }
   .ba__arrow .icon { transform: rotate(90deg); }
-  .event-card { grid-template-columns: auto minmax(0, 1fr); }
-  .event-card .btn { grid-column: 1 / -1; }
+  .event-cta { grid-template-columns: minmax(0, 1fr); }
+  .event-cta .btn { justify-self: start; }
 
+  /* Stacked: the hero plate goes under the text rather than beside it, and the
+     text stops being centred against a column that is no longer there. */
+  .ehero__inner { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .host { grid-template-columns: minmax(0, 1fr); }
+
+  /* Both event-index shapes stack: the photo goes above the text and gives up its
+     stretched height, so the min-heights come off and the natural ratio returns. */
+  .efeature { grid-template-columns: minmax(0, 1fr); }
+  .efeature__media img { min-height: 0; height: auto; aspect-ratio: 16 / 9; }
+  .erow { grid-template-columns: minmax(0, 1fr); }
+  .erow__media img { min-height: 0; height: auto; aspect-ratio: 16 / 9; }
 }
 
 @media (max-width: 700px) {
@@ -1644,7 +1934,9 @@ a.contact__v:hover { color: var(--navy-200); }
   .pullquote blockquote { font-size: 1.14rem; }
   .ba__title { font-size: 1.08rem; }
   .challenge h3 { font-size: 1.02rem; }
-  .event-card h3 { font-size: 1rem; }
+  .ecard__title { font-size: 1.06rem; }
+  .ehero__title { font-size: 1.62rem; }
+  .host__name { font-size: 1.35rem; }
   .layer__text h3 { font-size: .95rem; }
 
   /* Tag pills — the --lg treatment is desktop-only weight; at phone width each

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE, isAdminTokenValid } from "@/lib/admin-auth";
 import {
+  assignEnrolmentBatch,
+  confirmManualPayment,
   createCohort,
   deleteCoupon,
   listCohorts,
@@ -114,6 +116,7 @@ export async function POST(request: Request) {
           // Blank / null means uncapped, which is different from zero seats.
           seatsTotal: body.seatsTotal === null || body.seatsTotal === "" ? null : num("seatsTotal"),
           ...(validStatus ? { status } : {}),
+          ...(body.unlisted === undefined ? {} : { unlisted: Boolean(body.unlisted) }),
           sessionDates: Array.isArray(body.sessionDates)
             ? (body.sessionDates as unknown[]).map((v) => {
                 const value = String(v ?? "").trim();
@@ -143,6 +146,8 @@ export async function POST(request: Request) {
           active: Boolean(body.active),
           maxUses: body.maxUses === null || body.maxUses === "" ? null : Math.max(1, num("maxUses")),
           courseSlugs: slugs && slugs.length ? slugs : null,
+          // Empty string clears the placement; undefined leaves it untouched.
+          cohortId: body.cohortId === undefined ? undefined : String(body.cohortId ?? ""),
         });
         return ok ? NextResponse.json({ ok }) : NextResponse.json({ error: "Could not save." }, { status: 400 });
       }
@@ -150,6 +155,34 @@ export async function POST(request: Request) {
       case "coupon.delete": {
         const ok = await deleteCoupon(str("code"));
         return ok ? NextResponse.json({ ok }) : NextResponse.json({ error: "Code not found." }, { status: 404 });
+      }
+
+      /**
+       * Move a student between batches, or out of one. An empty `cohortId` means "no
+       * batch" — distinct from the field being absent, which would mean "leave it alone".
+       */
+      case "enrolment.batch": {
+        const target = str("cohortId");
+        const ok = await assignEnrolmentBatch(str("id"), target || null);
+        return ok
+          ? NextResponse.json({ ok })
+          : NextResponse.json({ error: "Could not move that student." }, { status: 400 });
+      }
+
+      /**
+       * ⚠️ THE NOTE IS VALIDATED HERE AS WELL AS IN THE PANEL. This is the one action that
+       * marks money as received with no gateway to confirm it, so the audit line is the
+       * whole record — and a client-side `required` attribute is not a check.
+       */
+      case "enrolment.manualPay": {
+        const note = str("note").trim();
+        if (!note) {
+          return NextResponse.json({ error: "Say how the payment arrived." }, { status: 400 });
+        }
+        const ok = await confirmManualPayment(str("id"), note, str("externalRef"));
+        return ok
+          ? NextResponse.json({ ok })
+          : NextResponse.json({ error: "Could not confirm that payment." }, { status: 400 });
       }
 
       default:

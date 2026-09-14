@@ -47,6 +47,27 @@ function dedupeKey(courseSlug: string, guardianEmail: string, studentName: strin
   return `${courseSlug}::${guardianEmail.trim().toLowerCase()}::${studentName.trim().toLowerCase()}`;
 }
 
+export const PLACEMENTS = ["unassigned", "assigned", "overflow"] as const;
+export type Placement = (typeof PLACEMENTS)[number];
+
+/**
+ * The placement of a record, including ones written before the field existed.
+ *
+ * ⚠️ DERIVED, NOT DEFAULTED. Older confirmed rows carry `seatClaimed` and a `cohortId` and
+ * nothing else; reading a missing `placement` as `"unassigned"` would quietly report
+ * students who are in a batch as unplaced, and reading it as `"assigned"` would hide the
+ * ones who never got a seat. The two existing fields already say which is which.
+ */
+export function placementOf(doc: {
+  placement?: Placement;
+  cohortId: string | null;
+  seatClaimed: boolean;
+}): Placement {
+  if (doc.placement) return doc.placement;
+  if (!doc.cohortId) return "unassigned";
+  return doc.seatClaimed ? "assigned" : "overflow";
+}
+
 export interface EnrolmentDoc {
   _id: ObjectId;
   courseSlug: string;
@@ -73,6 +94,24 @@ export interface EnrolmentDoc {
   status: EnrolmentStatus;
   /** Set once a seat has actually been taken, so it can never be double-counted. */
   seatClaimed: boolean;
+  /**
+   * Where this student actually ended up.
+   *
+   * ⚠️ `"overflow"` IS THE WHOLE POINT OF THIS FIELD. A batch's seats are claimed *after*
+   * Razorpay confirms the money, so "the batch is full" is discovered at a moment when
+   * refusing is not an option — the parent has already paid. Overflow is the holding group
+   * for exactly that case: the money is kept, the record is kept, the student is told they
+   * are enrolled, and the admin panel raises an alert so a seat gets added or a second
+   * batch opened. It is a queue, not an error.
+   *
+   * - `unassigned` — no batch was named. The ordinary case; placed by hand over WhatsApp.
+   * - `assigned`   — in `cohortId`, with a seat actually claimed.
+   * - `overflow`   — paid, intended for `cohortId`, but it was full or closed at the time.
+   *
+   * Absent on rows written before this existed; read it through `placementOf()`, which
+   * derives the right answer for those from `seatClaimed` and `cohortId`.
+   */
+  placement?: Placement;
   /** Random, unguessable — this is what the confirmation URL is keyed on. */
   reference: string;
   meta: { ip: string; userAgent: string };
@@ -342,17 +381,7 @@ export async function confirmPayment(input: {
   // No batch means no seat to claim — the student is placed by hand over WhatsApp. This
   // is the normal path for a course whose batches have not been set up yet.
   if (!result.seatClaimed && result.cohortId) {
-    const claimed = await claimSeat(result.cohortId);
-    await db
-      .collection("enrolments")
-      .updateOne({ _id: result._id }, { $set: { seatClaimed: claimed } });
-    if (!claimed) {
-      console.error(
-        `[enrolment] PAID BUT NO SEAT — enrolment ${result._id.toHexString()} ` +
-          `(${result.guardian.email}) paid for cohort ${result.cohortId}, which is full or closed. ` +
-          `Resolve manually: add a seat or refund.`,
-      );
-    }
+    await settlePlacement(result);
   }
 
   /**
@@ -383,12 +412,43 @@ export async function confirmFreeEnrolment(
   if (!result) return null;
 
   if (!result.seatClaimed && result.cohortId) {
-    const claimed = await claimSeat(result.cohortId);
-    await db
-      .collection("enrolments")
-      .updateOne({ _id: result._id }, { $set: { seatClaimed: claimed } });
+    await settlePlacement(result);
   }
   return result as EnrolmentDoc;
+}
+
+/**
+ * Take a seat in the student's batch, or put them in overflow if there is none left.
+ *
+ * ⚠️ THIS RUNS AFTER THE MONEY HAS MOVED AND IT MUST NEVER THROW THE STUDENT AWAY. By the
+ * time a seat is claimed Razorpay has already confirmed payment, so "that batch is full" is
+ * news arriving too late to act on: refusing here would mean holding the money and giving
+ * nothing. So a failed claim is not an error path — it is the overflow path. The enrolment
+ * keeps its `cohortId` (which batch they were *meant* for is the single most useful thing
+ * to know when placing them), gains `placement: "overflow"`, and surfaces in the admin
+ * panel as a batch-full alert with the affected students listed under it.
+ *
+ * The seat itself is still claimed with a conditional update inside `claimSeat`, so two
+ * simultaneous payments cannot both take the last seat — one of them lands here instead.
+ */
+async function settlePlacement(doc: EnrolmentDoc): Promise<void> {
+  const db = await getDb();
+  if (!doc.cohortId) return;
+
+  const claimed = await claimSeat(doc.cohortId);
+
+  await db.collection("enrolments").updateOne(
+    { _id: doc._id },
+    { $set: { seatClaimed: claimed, placement: claimed ? "assigned" : "overflow", updatedAt: new Date() } },
+  );
+
+  if (!claimed) {
+    console.warn(
+      `[enrolment] OVERFLOW — ${doc._id.toHexString()} (${doc.guardian.email}) paid for ` +
+        `cohort ${doc.cohortId}, which is full or closed. Held in overflow; add a seat or ` +
+        `open another batch. Nothing is lost and the student has been confirmed.`,
+    );
+  }
 }
 
 export async function markPaymentFailed(razorpayOrderId: string): Promise<void> {

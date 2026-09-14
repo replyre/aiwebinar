@@ -35,6 +35,17 @@ export interface Coupon {
   usesCount: number;
   /** `null` = valid on every course. */
   courseSlugs: string[] | null;
+  /**
+   * The batch everyone using this code is placed into. `null` = no placement, the student
+   * is batched by hand as before.
+   *
+   * ⚠️ THE CODE DECIDES THE BATCH, NOT THE PARENT. A school hands one code to its own
+   * students, and they should end up together regardless of which radio button happened to
+   * be on screen — so this overrides whatever `cohortId` the browser submitted. It is safe
+   * to trust because the coupon is re-fetched and re-validated server-side in the enrol
+   * route; the browser only ever sends a code string.
+   */
+  cohortId: string | null;
 }
 
 export type CouponRejection =

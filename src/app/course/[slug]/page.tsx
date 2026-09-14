@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import BrandLogo from "@/components/site/BrandLogo";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -154,15 +155,7 @@ export default async function CoursePage({ params }: Props) {
       <header className="course-bar">
         <div className="container course-bar__inner">
           <Link className="course-bar__brand" href="/" aria-label="Innovgeist — home">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size logo. */}
-            <img
-              src="/assets/img/innovgeist-logo.png"
-              srcSet="/assets/img/innovgeist-logo.png 1x, /assets/img/innovgeist-logo@2x.png 2x"
-              alt="Innovgeist"
-              width="150"
-              height="25"
-              decoding="async"
-            />
+            <BrandLogo width={150} height={25} />
           </Link>
           <div className="course-bar__right">
             {/* A course page that only goes forward is a dead end for anyone who

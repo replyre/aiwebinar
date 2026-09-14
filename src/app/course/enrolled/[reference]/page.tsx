@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import BrandLogo from "@/components/site/BrandLogo";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -17,7 +18,7 @@ import {
   formatSessionTime,
 } from "@/lib/course";
 import { getCohortById, getPublishedCourse } from "@/lib/courses-server";
-import { getEnrolmentByReference } from "@/lib/enrolments-server";
+import { getEnrolmentByReference, placementOf } from "@/lib/enrolments-server";
 import { COMPANY } from "@/lib/legal";
 
 /**
@@ -75,6 +76,15 @@ export default async function EnrolledPage({ params }: Props) {
   const firstSession = dated[0]?.startsAt ?? null;
   const days = firstSession ? daysUntil(firstSession) : null;
 
+  /**
+   * A start date is only shown to somebody who actually holds a seat in the batch it
+   * belongs to. An overflow student is attached to that batch but has no seat in it and may
+   * well be moved to another, so its dates are not theirs to rely on — they get the
+   * "details on WhatsApp" line instead.
+   */
+  const showStartDate =
+    days !== null && days >= 0 && placementOf(enrolment) === "assigned";
+
   const status = enrolment.payment.status;
   const paid = status === "paid" || status === "not_required";
   const canRetry = status === "pending" || status === "failed";
@@ -111,15 +121,7 @@ export default async function EnrolledPage({ params }: Props) {
       <header className="course-bar">
         <div className="container course-bar__inner">
           <Link className="course-bar__brand" href="/" aria-label="Innovgeist — home">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size logo. */}
-            <img
-              src="/assets/img/innovgeist-logo.png"
-              srcSet="/assets/img/innovgeist-logo.png 1x, /assets/img/innovgeist-logo@2x.png 2x"
-              alt="Innovgeist"
-              width="150"
-              height="25"
-              decoding="async"
-            />
+            <BrandLogo width={150} height={25} />
           </Link>
           <div className="course-bar__right">
             <Link className="btn btn--ghost btn--sm" href="/account/dashboard">
@@ -161,8 +163,16 @@ export default async function EnrolledPage({ params }: Props) {
                 {paid ? (
                   <>
                     {course ? course.title : "The course"}
-                    {cohort ? ` · ${cohort.name}` : ""}
-                    {days !== null && days >= 0 ? (
+                    {/**
+                     * ⚠️ THE BATCH IS NEVER NAMED HERE, EVEN WHEN WE KNOW IT. A seat is
+                     * claimed after the money lands, so at this moment the batch on the
+                     * record is an *intention* — if it turned out to be full the student is
+                     * in overflow and will be moved. Printing "Batch 1" on a confirmation
+                     * makes a promise the placement has not actually kept, and the parent
+                     * screenshots it. Saying they are in a batch is true in every case; the
+                     * name follows on WhatsApp once it is settled.
+                     */}
+                    {showStartDate ? (
                       <>
                         {" "}
                         — starting{" "}
@@ -172,7 +182,7 @@ export default async function EnrolledPage({ params }: Props) {
                         .
                       </>
                     ) : (
-                      " — we'll confirm the start date shortly."
+                      " — you're in a batch. We'll send your batch details and start date on WhatsApp."
                     )}
                   </>
                 ) : (

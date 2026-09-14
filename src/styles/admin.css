@@ -223,3 +223,91 @@
 }
 .admin-table__actions button:hover:not(:disabled) { background: var(--bg-tint); }
 .admin-table__actions button:disabled { opacity: .5; cursor: default; }
+
+/* --------------------------- grouped enrolments -------------------------- */
+/* Paid, awaiting and failed each get their own table. The heading carries the
+   count so the number that matters is readable without counting rows. */
+.admin-group { margin-bottom: var(--sp-6); }
+.admin-group__title {
+  display: flex; align-items: center; gap: .6rem;
+  margin: 0 0 var(--sp-3);
+  font-size: .78rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+}
+/* Course, seat count and flags for the batch this group belongs to. Pushed right so
+   the batch name and its count stay together on the left. */
+/* Money collected in this batch. Green and beside the head count, so a batch reads
+   as "four students, ₹1,996" at a glance without opening it. */
+.admin-group__sum {
+  padding: .1rem .5rem; border-radius: 999px;
+  background: var(--pos-tint); color: var(--pos);
+  font-size: .78rem; letter-spacing: 0;
+}
+
+.admin-group__meta {
+  margin-left: auto;
+  font-size: .74rem; font-weight: 500;
+  letter-spacing: .02em; text-transform: none; color: var(--text-soft);
+}
+
+.admin-group__count {
+  padding: .1rem .5rem; border-radius: 999px;
+  background: var(--bg-tint-2); color: var(--text);
+  font-size: .78rem; letter-spacing: 0;
+}
+
+/* Paid students with nowhere to sit. Amber, not red: the money is safe and the
+   student is confirmed — it is a queue to work through, not a failure. */
+.admin-alert {
+  margin: 0 0 var(--sp-5); padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--warn); border-left-width: 3px; border-radius: var(--r);
+  background: var(--warn-tint); color: var(--warn);
+  font-size: .88rem; line-height: 1.6;
+}
+.admin-alert strong { color: var(--warn); }
+
+.admin-check {
+  display: flex; align-items: flex-start; gap: .6rem;
+  font-size: .86rem; line-height: 1.5; color: var(--text-muted);
+}
+.admin-check input { margin-top: .2rem; flex: none; }
+
+/* Batch picker sitting inside a table cell. Sized down to the row rather than the
+   form controls elsewhere, so a table of twenty students still scans as a table. */
+.admin-inline-select {
+  width: 100%; max-width: 14rem;
+  padding: .3rem .5rem;
+  border: 1px solid var(--border-mid); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+  font: inherit; font-size: .82rem;
+}
+.admin-inline-select:hover:not(:disabled) { border-color: var(--accent); }
+.admin-inline-select:disabled { opacity: .55; cursor: default; }
+
+/* The row that opens under a checkout when you record a payment taken outside
+   Razorpay. Amber, because it is the one control here that marks money received
+   with no gateway agreeing — it should not look like an ordinary save. */
+.admin-manual {
+  padding: var(--sp-4) var(--sp-5);
+  border-left: 3px solid var(--warn);
+  background: var(--warn-tint);
+}
+.admin-manual .admin-hint { margin-bottom: var(--sp-3); color: var(--text); }
+.admin-manual code {
+  padding: .05rem .3rem; border-radius: 5px;
+  background: rgba(0, 0, 0, .06); font-size: .85em;
+}
+.admin-manual__fields {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-3);
+}
+.admin-manual__fields label { display: grid; gap: .3rem; flex: 1 1 15rem; }
+.admin-manual__fields span {
+  font-size: .74rem; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted);
+}
+.admin-manual__fields input {
+  padding: .45rem .6rem;
+  border: 1px solid var(--border-mid); border-radius: 8px;
+  background: var(--bg); color: var(--text); font: inherit; font-size: .86rem;
+}
+.admin-manual__fields input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
