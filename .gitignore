@@ -27,3 +27,6 @@ next-env.d.ts
 # Env — never commit real keys
 .env*.local
 .env.production
+
+# One-off migration backups — contain student personal data.
+scripts/.backup-*.json

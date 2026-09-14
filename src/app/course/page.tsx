@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import BrandLogo from "@/components/site/BrandLogo";
 import Link from "next/link";
 import CourseImage from "@/components/course/CourseImage";
 import SiteFooter from "@/components/site/SiteFooter";
@@ -33,15 +34,7 @@ export default async function CourseCatalogue() {
       <header className="course-bar">
         <div className="container course-bar__inner">
           <Link className="course-bar__brand" href="/" aria-label="Innovgeist — home">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size logo. */}
-            <img
-              src="/assets/img/innovgeist-logo.png"
-              srcSet="/assets/img/innovgeist-logo.png 1x, /assets/img/innovgeist-logo@2x.png 2x"
-              alt="Innovgeist"
-              width="150"
-              height="25"
-              decoding="async"
-            />
+            <BrandLogo width={150} height={25} />
           </Link>
           <div className="course-bar__right">
             <Link className="btn btn--ghost btn--sm course-bar__account" href="/account">
@@ -56,9 +49,13 @@ export default async function CourseCatalogue() {
 
       <main id="main">
         <section className="catalogue-hero">
-          <div className="container">
-            <p className="eyebrow">Courses</p>
-            <h1 className="catalogue-hero__title">Learn to think with AI, not outsource to it.</h1>
+          <div className="container catalogue-hero__inner">
+            {/* Eyebrow and heading are one column; the lede sits beside them. Same split
+                the home page uses for its section heads. */}
+            <div>
+              <p className="eyebrow">Courses</p>
+              <h1 className="catalogue-hero__title">Learn to think with AI, not outsource to it.</h1>
+            </div>
             <p className="catalogue-hero__lede">
               Live, hands-on courses for students. Every one ends with something built and a
               result you can measure — not a certificate for showing up.
@@ -69,7 +66,16 @@ export default async function CourseCatalogue() {
         <section className="section">
           <div className="container">
             {courses.length ? (
-              <div className="catalogue">
+              /**
+               * ⚠️ ONE COURSE GETS A DIFFERENT SHAPE, NOT A NARROWER GRID. `.catalogue` is
+               * `auto-fit`, so a lone card stretches to the full container — on a 1080p
+               * screen that is a banner image nearly two thousand pixels wide above three
+               * lines of text, which reads as a layout fault rather than as a catalogue.
+               * The modifier turns that single card on its side: art beside the text, both
+               * filling the row honestly. It comes off by itself the moment a second course
+               * is published.
+               */
+              <div className={`catalogue${courses.length === 1 ? " catalogue--single" : ""}`}>
                 {courses.map((course) => (
                   <article className="catalogue-card" key={course.slug}>
                     <Link

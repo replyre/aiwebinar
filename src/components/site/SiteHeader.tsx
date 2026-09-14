@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandLogo from "@/components/site/BrandLogo";
 import { useEffect, useRef, useState } from "react";
 
 const NAV_LINKS = [
@@ -107,16 +108,7 @@ export default function SiteHeader({ courses = [] }: { courses?: NavCourse[] }) 
     <header className={`site-header${stuck ? " is-stuck" : ""}`} data-header="">
       <div className="container header__inner">
         <a className="header__brand" href="#top" aria-label="Innovgeist — home">
-          {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size logo with a
-              hand-authored 2x srcSet; next/image would re-encode it for no gain. */}
-          <img
-            src="/assets/img/innovgeist-logo.png"
-            srcSet="/assets/img/innovgeist-logo.png 1x, /assets/img/innovgeist-logo@2x.png 2x"
-            alt="Innovgeist"
-            width="170"
-            height="28"
-            decoding="async"
-          />
+          <BrandLogo width={170} height={28} />
         </a>
 
         <nav

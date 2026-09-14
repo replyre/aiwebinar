@@ -17,8 +17,8 @@ export default function Trainer() {
               <div className="trainer__badge">
                 <svg className="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526" /><circle cx="12" cy="8" r="6" /></svg>
                 <span>
-                  <b>Prize Pool Sponsor &amp; Mentor</b>
-                  <span>HACK X VID-YOUTH · IET Lucknow, 2026</span>
+                  <b>AI Engineer, Mentor &amp; Speaker</b>
+                  <span>IET Lucknow · Shri Vishwanath Inter College</span>
                 </span>
               </div>
             </div>

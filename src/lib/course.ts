@@ -224,6 +224,16 @@ export interface Cohort {
   seatsTaken: number;
   enrolmentClosesAt: Date | null;
   status: CohortStatus;
+  /**
+   * Kept out of the public batch picker on the course page.
+   *
+   * ⚠️ THIS EXISTS SO A SCHOOL'S BATCH CAN BE `open` WITHOUT BEING PUBLIC. A coupon that
+   * places students into a batch needs that batch open enough to take seats — but `open` is
+   * also exactly what puts it in the radio list every public buyer sees, which would drop
+   * strangers into a school's cohort. Unlisted batches are reachable only by the code that
+   * names them.
+   */
+  unlisted: boolean;
 }
 
 /* --------------------------------- helpers --------------------------------- */

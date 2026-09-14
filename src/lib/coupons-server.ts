@@ -42,6 +42,7 @@ export async function findCoupon(code: string): Promise<Coupon | null> {
       maxUses: doc.maxUses ?? null,
       usesCount: doc.usesCount ?? 0,
       courseSlugs: doc.courseSlugs ?? null,
+      cohortId: doc.cohortId ?? null,
     };
   } catch (error) {
     console.error("[coupons] lookup failed", error);
