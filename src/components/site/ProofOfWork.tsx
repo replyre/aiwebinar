@@ -1,12 +1,6 @@
 import Link from "next/link";
 import EventsRail, { type RailEvent } from "@/components/site/EventsRail";
-import {
-  coverPhoto,
-  formatEventDate,
-  formatEventYear,
-  listEvents,
-  photoSources,
-} from "@/lib/events";
+import { coverPhoto, eventDateLabel, listEvents, photoSources } from "@/lib/events";
 
 /**
  * Proof of work — the field record, as a rail of events with a page behind each one.
@@ -32,11 +26,7 @@ export default function ProofOfWork() {
       cardTitle: event.cardTitle,
       role: event.role,
       format: event.format,
-      // Only the school session has a date we can stand behind to the day; the hackathon
-      // record gives the year, so the year is what its card says.
-      dateLabel: event.date.endsWith("-01-01")
-        ? formatEventYear(event.date)
-        : formatEventDate(event.date),
+      dateLabel: eventDateLabel(event),
       summary: event.summary,
       location: event.host.location,
       crest: event.host.crest,

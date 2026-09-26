@@ -2,14 +2,7 @@ import type { Metadata } from "next";
 import BrandLogo from "@/components/site/BrandLogo";
 import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
-import {
-  coverPhoto,
-  formatEventDate,
-  formatEventYear,
-  listEvents,
-  photoSources,
-  type SiteEvent,
-} from "@/lib/events";
+import { coverPhoto, eventDateLabel, listEvents, photoSources } from "@/lib/events";
 
 /**
  * The field record index.
@@ -37,10 +30,6 @@ export const metadata: Metadata = {
  * every event we have is on the page.
  */
 const MAX_LISTED = 12;
-
-function dateLabel(event: SiteEvent): string {
-  return event.date.endsWith("-01-01") ? formatEventYear(event.date) : formatEventDate(event.date);
-}
 
 export default function EventsIndexPage() {
   const all = listEvents();
@@ -119,7 +108,7 @@ export default function EventsIndexPage() {
                 <p className="ecard__meta">
                   <span>{featured.format}</span>
                   <span aria-hidden="true">·</span>
-                  <span>{dateLabel(featured)}</span>
+                  <span>{eventDateLabel(featured)}</span>
                 </p>
 
                 <h3 className="efeature__title">
@@ -197,7 +186,7 @@ export default function EventsIndexPage() {
                         <p className="ecard__meta">
                           <span>{event.format}</span>
                           <span aria-hidden="true">·</span>
-                          <span>{dateLabel(event)}</span>
+                          <span>{eventDateLabel(event)}</span>
                         </p>
 
                         <h3 className="erow__title">

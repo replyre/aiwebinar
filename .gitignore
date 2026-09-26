@@ -30,3 +30,6 @@ next-env.d.ts
 
 # One-off migration backups — contain student personal data.
 scripts/.backup-*.json
+
+# Raw event capture — originals only, outputs live in public/assets/img/events.
+temp/

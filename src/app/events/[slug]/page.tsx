@@ -4,14 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Gallery from "@/components/site/Gallery";
 import SiteFooter from "@/components/site/SiteFooter";
-import {
-  coverPhoto,
-  formatEventDate,
-  formatEventYear,
-  getEvent,
-  photoSources,
-  type SiteEvent,
-} from "@/lib/events";
+import { coverPhoto, eventDateLabel, getEvent, photoSources } from "@/lib/events";
 
 /**
  * The full record of one event.
@@ -36,11 +29,6 @@ interface Props {
  * pressure — taking every route in this segment down with it, including the 404, which
  * starts returning 500. Rendering on request costs an object lookup.
  */
-
-/** The day, where we have it to the day; otherwise the year, and never a fabricated date. */
-function dateLabel(event: SiteEvent): string {
-  return event.date.endsWith("-01-01") ? formatEventYear(event.date) : formatEventDate(event.date);
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -78,12 +66,15 @@ export default async function EventPage({ params }: Props) {
    */
   const hero = photoSources(event, coverPhoto(event));
 
-  const when = dateLabel(event);
+  const when = eventDateLabel(event);
 
   /**
-   * `Event` schema, so a search result for the college's name can surface this page.
-   * `organizer` points at the organisation node the root layout already publishes rather
-   * than restating it — same joint discipline as `lib/seo.ts`.
+   * `Event` schema, so a search result for the host's name can surface this page.
+   *
+   * ⚠️ THE HOST IS THE ORGANIZER, NOT US. An earlier version named Innovgeist here, which
+   * on the SIH page would have been a machine-readable claim that we ran Smart India
+   * Hackathon's internal round at IET Lucknow. We were on its jury. `contributor` is the
+   * honest slot for that, and `performer` is added only where we actually took the room.
    */
   const jsonLd = {
     "@context": "https://schema.org",
@@ -98,8 +89,11 @@ export default async function EventPage({ params }: Props) {
       name: event.host.name,
       address: { "@type": "PostalAddress", addressLocality: event.host.location, addressCountry: "IN" },
     },
-    organizer: { "@type": "Organization", name: "Innovgeist Technologies Private Limited" },
-    performer: { "@type": "Person", name: "Atul Kumar Verma" },
+    organizer: { "@type": "Organization", name: event.host.name },
+    contributor: { "@type": "Organization", name: "Innovgeist Technologies Private Limited" },
+    ...(event.role.includes("Speaker")
+      ? { performer: { "@type": "Person", name: "Atul Kumar Verma" } }
+      : {}),
   };
 
   return (
@@ -198,8 +192,8 @@ export default async function EventPage({ params }: Props) {
                 </h2>
               </div>
               <p className="section__lede" data-reveal="" data-reveal-delay="1">
-                The session was built for students who had heard of AI and never been shown
-                it &mdash; so it starts at what the thing is and ends at what to do on Monday.
+                {event.coveredLede ??
+                  "The session was built for students who had heard of AI and never been shown it — so it starts at what the thing is and ends at what to do on Monday."}
               </p>
             </div>
 
@@ -282,7 +276,7 @@ export default async function EventPage({ params }: Props) {
               <figure className="report" lang={event.report.language}>
                 <blockquote className="report__body">{event.report.body}</blockquote>
                 <figcaption className="report__by">
-                  {event.host.name} &mdash; the college&rsquo;s own account of the day
+                  {event.host.name} &mdash; their own account of the day
                   {event.report.translatedFrom === "hi" ? ", translated from Hindi" : null}
                 </figcaption>
               </figure>
@@ -372,15 +366,14 @@ export default async function EventPage({ params }: Props) {
           <div className="container">
             <div className="event-cta event-cta--lg">
               <div>
-                <h3>Run this session at your school</h3>
+                <h3>{event.cta?.title ?? "Run this session at your school"}</h3>
                 <p>
-                  Same session, your hall, English or Hindi. Tell us the year groups and the
-                  date you have in mind and we will send the outline, the technical
-                  requirements and what we need from your side.
+                  {event.cta?.body ??
+                    "Same session, your hall, English or Hindi. Tell us the year groups and the date you have in mind and we will send the outline, the technical requirements and what we need from your side."}
                 </p>
               </div>
               <Link className="btn btn--primary" href="/#contact">
-                Discuss a session
+                {event.cta ? "Talk to us" : "Discuss a session"}
                 <svg className="icon icon--sm" aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
