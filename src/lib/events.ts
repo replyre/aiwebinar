@@ -56,6 +56,15 @@ export interface SiteEvent {
   role: string;
   /** ISO date. Rendered through `formatEventDate` so the timezone is pinned once. */
   date: string;
+  /**
+   * The closing day, for an event that ran across more than one.
+   *
+   * ⚠️ IT IS A SECOND DAY, NOT A SPAN. The SIH round ran on the 19th and the 21st —
+   * there was no event on the 20th — so `eventDateLabel` joins the two with "&" rather
+   * than an en dash. If an event ever genuinely runs straight through, that is a different
+   * label and this field is the wrong shape for it.
+   */
+  dateEnd?: string;
   /** e.g. "AI Awareness Webinar" — what the institution called it. */
   format: string;
   /** One line for the rail card. */
@@ -65,6 +74,20 @@ export interface SiteEvent {
   host: EventHost;
   /** What was actually covered, as delivered. */
   covered: { title: string; body: string }[];
+  /**
+   * The standfirst above `covered`, where the page's default does not fit.
+   *
+   * ⚠️ THE DEFAULT IS WRITTEN FOR A SCHOOL SESSION — "students who had heard of AI and
+   * never been shown it". On a hackathon page that sentence is simply untrue, and a
+   * paragraph that is visibly about the wrong event undoes exactly the credibility these
+   * pages exist to build. Absent, the school wording stands.
+   */
+  coveredLede?: string;
+  /**
+   * The closing call to action, same reason: "Run this session at your school" is the
+   * right ask under a webinar record and the wrong one under a judging panel.
+   */
+  cta?: { title: string; body: string };
   photos: EventPhoto[];
   /** The lead photo for the rail card — a name from `photos`. */
   cover: string;
@@ -94,6 +117,102 @@ const SVNIC: EventHost = {
 };
 
 export const EVENTS: SiteEvent[] = [
+  {
+    slug: "sih-2026-hackathon-iet-lucknow",
+    cardTitle: "SIH 2026 Hackathon, IET Lucknow",
+    title: "Smart India Hackathon 2026 — IET Lucknow",
+    role: "Jury Panel · Mentor",
+    date: "2026-09-19",
+    dateEnd: "2026-09-21",
+    format: "Hackathon",
+    summary:
+      "Seventy-three student teams pitched solutions to national problem statements over " +
+      "two days, across two parallel panels — Innovgeist sat on the jury and mentored teams.",
+    lede:
+      "The Incubation Center at IET Lucknow, with its Institution's Innovation Council, ran " +
+      "the qualifying round for Smart India Hackathon 2026 across two days. " +
+      "Seventy-three teams presented; two evaluation panels ran in parallel to get through " +
+      "them. Innovgeist was on the jury for those rounds and mentoring teams alongside it.",
+    host: {
+      name: "Incubation Center, IET Lucknow",
+      location: "Kalam Hall, NNF Building, IET Lucknow, Uttar Pradesh",
+      affiliation: "Dr. A.P.J. Abdul Kalam Technical University",
+      managedBy: "In association with the Institution's Innovation Council (IIC)",
+    },
+    coveredLede:
+      "Judging a qualifying round is not scoring a demo. It is deciding which of " +
+      "seventy-three ideas is worth another six months of somebody's time — so this is " +
+      "what the panel actually pressed each team on.",
+    covered: [
+      {
+        title: "Understanding of the problem",
+        body:
+          "Whether the team could state the problem statement in their own words, and name " +
+          "who actually suffers from it — before they said a word about their solution.",
+      },
+      {
+        title: "Technical approach",
+        body:
+          "What they had built against what they had described: the stack, the parts that " +
+          "were working, and the parts still standing in as a slide.",
+      },
+      {
+        title: "Innovation and feasibility",
+        body:
+          "Held together deliberately. An idea nobody has tried is worth little if it " +
+          "cannot be built by this team in the time SIH actually gives them.",
+      },
+      {
+        title: "Potential impact",
+        body:
+          "Who uses it, at what scale, and what changes for them — the test a prototype " +
+          "has to pass before it is worth taking to the national round or incubating.",
+      },
+    ],
+    photos: [
+      {
+        name: "sih2026-award",
+        alt: "A certificate and memento being presented in Kalam Hall in front of the Smart India Hackathon 2026 slide.",
+        caption:
+          "Certificate and memento presented in Kalam Hall, under the hackathon slide.",
+        width: 800,
+        height: 534,
+        retinaWidth: 1600,
+      },
+      {
+        name: "sih2026-cohort",
+        alt: "Participating teams, faculty and jury members gathered with their certificates outside the NNF Building at IET Lucknow, beside the Smart India Hackathon 2026 banner.",
+        caption:
+          "Teams, faculty and panel outside the NNF Building at the close of the hackathon.",
+        width: 800,
+        height: 534,
+        retinaWidth: 1600,
+      },
+    ],
+    cover: "sih2026-award",
+    report: {
+      language: "en",
+      body:
+        "The Incubation Center, Institute of Engineering and Technology Lucknow, in " +
+        "association with IIC, has successfully conducted the SIH 2026 Internal Hackathon " +
+        "on 19th and 21st September 2026. A total of 73 student teams presented their " +
+        "innovative solutions to real-world problem statements under Smart India Hackathon " +
+        "2026. To ensure a smooth and structured evaluation, the presentations were " +
+        "conducted over two days with two evaluation panels running in parallel. The teams " +
+        "showcased their understanding of the problem, proposed solutions, technical " +
+        "approach, innovation, feasibility and potential impact. This is an important step " +
+        "towards identifying and nurturing promising student innovations for SIH, prototype " +
+        "development and future incubation.",
+    },
+    attendance: "73 student teams",
+    cta: {
+      title: "Running a hackathon or an evaluation round?",
+      body:
+        "We judge, mentor and sponsor student hackathons — the same panel work as above. " +
+        "Tell us the dates, the format and the number of teams and we will tell you what " +
+        "we can cover.",
+    },
+  },
   {
     slug: "svnic-kalan-ai-awareness-webinar",
     cardTitle: "Shri Vishwanath Inter College, Kalan",
@@ -324,4 +443,29 @@ export function formatEventDate(iso: string): string {
 /** Year alone, for the events whose exact day we have not confirmed. */
 export function formatEventYear(iso: string): string {
   return iso.slice(0, 4);
+}
+
+/**
+ * The one date string every surface prints.
+ *
+ * ⚠️ IT LIVES HERE BECAUSE IT USED TO LIVE IN THREE PLACES. The rail, the index and the
+ * detail page each had their own `dateLabel` with the same `-01-01` check copy-pasted into
+ * it, so the two-day SIH round would have had to be taught to all three separately — and
+ * the fourth surface would have got it wrong. One event, one label.
+ *
+ * `-01-01` is the sentinel for "we have the year and not the day" (the hackathon record),
+ * and it prints the year alone rather than inventing a New Year's Day session.
+ */
+export function eventDateLabel(event: SiteEvent): string {
+  if (event.date.endsWith("-01-01")) return formatEventYear(event.date);
+
+  const start = formatEventDate(event.date);
+  if (!event.dateEnd) return start;
+
+  // "19 & 21 September 2026" — the second day carries the month and year, so the first is
+  // cut back to its day number. Across a month boundary that shortening would lose the
+  // month, so both dates are printed in full instead.
+  const end = formatEventDate(event.dateEnd);
+  const sameMonth = event.date.slice(0, 7) === event.dateEnd.slice(0, 7);
+  return sameMonth ? `${start.split(" ")[0]} & ${end}` : `${start} & ${end}`;
 }
