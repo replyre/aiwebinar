@@ -70,6 +70,12 @@ export default async function AccountDashboard() {
     }),
   );
 
+  /**
+   * A class that has already run shows "Held" instead of its time. Past batches were dated
+   * after the fact with no class time on record, so the stored time is a placeholder.
+   */
+  const now = new Date();
+
   const needsPayment = rows.filter(
     ({ enrolment }) =>
       enrolment.payment.status === "pending" || enrolment.payment.status === "failed",
@@ -165,10 +171,10 @@ export default async function AccountDashboard() {
                         <ol className="dash-card__sessions">
                           {dated.map((session) => (
                             <li key={session.n}>
-                              <span className="dash-card__week">Week {session.n}</span>
+                              <span className="dash-card__week">Class {session.n}</span>
                               <span className="dash-card__when">
                                 <strong>{formatSessionDate(session.startsAt)}</strong>
-                                {formatSessionTime(session.startsAt)}
+                                {session.startsAt <= now ? "Held" : formatSessionTime(session.startsAt)}
                               </span>
                             </li>
                           ))}
