@@ -243,10 +243,10 @@ export default async function EnrolledPage({ params }: Props) {
                 <ol className="conf-card__sessions">
                   {dated.map((session) => (
                     <li key={session.n}>
-                      <span className="conf-card__week">Week {session.n}</span>
+                      <span className="conf-card__week">Class {session.n}</span>
                       <span className="conf-card__when">
                         <strong>{formatSessionDate(session.startsAt)}</strong>
-                        {formatSessionTime(session.startsAt)}
+                        {session.startsAt <= new Date() ? "Held" : formatSessionTime(session.startsAt)}
                       </span>
                     </li>
                   ))}
