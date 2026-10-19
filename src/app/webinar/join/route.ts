@@ -1,7 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { getDb, mongoConfigured } from "@/lib/mongodb";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { JOIN_SOURCES, WEBINAR_PATH, type JoinSource, type WebinarLang } from "@/lib/webinar";
+import { JOIN_SOURCES, type JoinSource, type WebinarLang } from "@/lib/webinar";
 
 /**
  * Every "Join WhatsApp group" button lands here: count the click, then 302 to the invite.
@@ -17,15 +17,18 @@ import { JOIN_SOURCES, WEBINAR_PATH, type JoinSource, type WebinarLang } from "@
  * fingerprint-able row would not be. The IP is read only for the in-memory rate limit and
  * is gone with the process.
  *
- * ⚠️ THE INVITE LINK IS AN ENV VAR, `WEBINAR_WHATSAPP_URL`. A WhatsApp group holds 1,024
- * people; when it fills, a new invite goes in on Vercel and every ad keeps working without
- * a deploy. Unset, the button returns the visitor to the page rather than to an error.
+ * ⚠️ THE INVITE LINK IS `WEBINAR_INVITE` BELOW, AND `WEBINAR_WHATSAPP_URL` OVERRIDES IT.
+ * A WhatsApp group holds 1,024 people; when it fills, set the env var on Vercel to the new
+ * group and every ad keeps working without a deploy. An override that is not a WhatsApp
+ * invite link is ignored, never followed.
  */
 
 /** Mongo's driver is not available on the edge runtime. */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** The webinar WhatsApp group. */
+const WEBINAR_INVITE = "https://chat.whatsapp.com/J6RxY2LHJ3nGcP1DWrhjb0";
 const INVITE_PREFIXES = ["https://chat.whatsapp.com/", "https://whatsapp.com/channel/"];
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
@@ -61,11 +64,12 @@ export async function GET(request: Request) {
     ? (rawSrc as JoinSource)
     : "unknown";
 
-  const invite = process.env.WEBINAR_WHATSAPP_URL ?? "";
-  if (!INVITE_PREFIXES.some((prefix) => invite.startsWith(prefix))) {
-    console.error("[webinar/join] WEBINAR_WHATSAPP_URL is unset or not a WhatsApp invite link");
-    return NextResponse.redirect(new URL(WEBINAR_PATH[lang], url), { status: 302 });
+  const override = process.env.WEBINAR_WHATSAPP_URL ?? "";
+  const overrideValid = INVITE_PREFIXES.some((prefix) => override.startsWith(prefix));
+  if (override && !overrideValid) {
+    console.error("[webinar/join] WEBINAR_WHATSAPP_URL is not a WhatsApp invite link; using the default");
   }
+  const invite = overrideValid ? override : WEBINAR_INVITE;
 
   // A reload-happy thumb or a bot must not be able to inflate the counts; past the limit the
   // visitor is still sent on, only the row is skipped.
