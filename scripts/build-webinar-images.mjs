@@ -16,7 +16,12 @@
  * source width itself is emitted instead, so an un-upscaled photo still publishes cleanly —
  * just with fewer sizes. Upscaling here would only make a bigger blurry file.
  *
- * Outputs, into `public/assets/img/webinar/`: `<name>-<width>.webp` and `.jpg` per width.
+ * Outputs, into `public/assets/img/webinar/`: `<name>-<width>.webp` per width. WebP only:
+ * every browser the page targets decodes it, so a JPEG copy would never be requested.
+ *
+ * ⚠️ THE SOURCES ARE NOT IN THE REPOSITORY (gitignored, ~11 MB). Put them back under
+ * `source-assets/webinar/` to re-run this; the committed outputs are all the site needs.
+ *
  * The page reads `WEBINAR_PHOTOS` in `src/lib/webinar.ts` — update the widths there to
  * match what this prints.
  */
@@ -44,7 +49,6 @@ for (const name of PHOTOS) {
     const base = path.join(OUT_DIR, `${name}-${width}`);
     const sized = () => sharp(src).rotate().resize({ width, kernel: "lanczos3" });
     await sized().webp({ quality: 80, effort: 6 }).toFile(`${base}.webp`);
-    await sized().jpeg({ quality: 82, mozjpeg: true }).toFile(`${base}.jpg`);
     made.push(width);
   }
   console.log(`  ${name}  ${srcWidth}×${srcHeight}  →  ${made.join(", ")}w`);

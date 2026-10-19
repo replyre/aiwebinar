@@ -65,11 +65,7 @@
   padding-inline: var(--wb-gutter);
 }
 
-/* ⚠️ Every photo on this page fills a box. `<picture>` is inline by default and
-   has no height, so an `img { height: 100% }` inside it resolves against nothing
-   and the photo stops halfway down its frame. The wrapper has to fill too. */
-.wb-hero__img picture,
-.wb-proofband__img picture { display: block; width: 100%; height: 100%; }
+/* Every photo on this page fills its box. */
 .wb-hero__img img,
 .wb-proofband__img img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
@@ -778,7 +774,6 @@
 /* The class photo, dimmed to a tone behind the navy — texture and proof, not a picture
    to look at. Same file as the hero, so it is usually already in the cache. */
 .wb-final__bg { position: absolute; inset: 0; opacity: .16; }
-.wb-final__bg picture { display: block; width: 100%; height: 100%; }
 .wb-final__bg img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; filter: grayscale(1); }
 .wb-final::after {
   content: "";

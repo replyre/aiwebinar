@@ -188,11 +188,12 @@ const PARENT_ICONS = [
 const PHOTO_DIR = "/assets/img/webinar";
 
 /**
- * `<picture>` with WebP first and a JPEG fallback, from the renditions in `WEBINAR_PHOTOS`.
+ * One photo from the WebP renditions in `WEBINAR_PHOTOS`, with `w` descriptors so the
+ * browser picks the width it actually needs.
  *
- * ⚠️ THE WEBP IS WHAT ACTUALLY LOADS. Every current browser takes the WebP `<source>` and
- * never requests the JPEG — so editing only the `.jpg` changes nothing on screen. Replace
- * the source in `source-assets/webinar/` and re-run the build script; both formats follow.
+ * WebP only — every browser this audience uses decodes it, so a JPEG fallback would be a
+ * second copy of every file that nothing ever requests. To change a photo, replace its
+ * source in `source-assets/webinar/` and re-run `scripts/build-webinar-images.mjs`.
  */
 function WebinarPicture({
   name,
@@ -206,23 +207,21 @@ function WebinarPicture({
   priority?: boolean;
 }) {
   const photo = WEBINAR_PHOTOS[name];
-  const set = (ext: string) => photo.widths.map((w) => `${PHOTO_DIR}/${name}-${w}.${ext} ${w}w`).join(", ");
   const largest = photo.widths[photo.widths.length - 1];
   return (
-    <picture>
-      <source type="image/webp" srcSet={set("webp")} sizes={sizes} />
-      <img
-        src={`${PHOTO_DIR}/${name}-${largest}.jpg`}
-        srcSet={set("jpg")}
-        sizes={sizes}
-        width={photo.width}
-        height={photo.height}
-        alt={alt}
-        decoding="async"
-        loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : "auto"}
-      />
-    </picture>
+    // Hand-built renditions at known widths; next/image would re-encode them for no gain.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`${PHOTO_DIR}/${name}-${largest}.webp`}
+      srcSet={photo.widths.map((w) => `${PHOTO_DIR}/${name}-${w}.webp ${w}w`).join(", ")}
+      sizes={sizes}
+      width={photo.width}
+      height={photo.height}
+      alt={alt}
+      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+    />
   );
 }
 
