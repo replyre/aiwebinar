@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 /**
@@ -73,7 +74,17 @@ export default function LanguageToggle() {
   const [active, setActive] = useState<LanguageCode>("en");
   const [ready, setReady] = useState(false);
 
+  /**
+   * ⚠️ THE WEBINAR PAGE HAS ITS OWN HINDI AND MUST NOT GET THIS ONE. `/webinar` is
+   * written in Hindi and English as two routes with their own switch; this widget on top
+   * would machine-translate the hand-written Hindi, load Google's script on the page with the
+   * tightest speed budget, and sit fixed in the same corner as its sticky join bar.
+   */
+  const pathname = usePathname();
+  const standDown = pathname === "/webinar" || pathname.startsWith("/webinar/");
+
   useEffect(() => {
+    if (standDown) return;
     setActive(readCookie());
 
     if (document.getElementById(SCRIPT_ID)) {
@@ -141,7 +152,7 @@ export default function LanguageToggle() {
     script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
     script.async = true;
     document.body.appendChild(script);
-  }, []);
+  }, [standDown]);
 
   const choose = useCallback((code: LanguageCode) => {
     writeCookie(code === "en" ? null : `/en/${code}`);
@@ -163,6 +174,8 @@ export default function LanguageToggle() {
     }
     window.location.reload();
   }, []);
+
+  if (standDown) return null;
 
   return (
     <>

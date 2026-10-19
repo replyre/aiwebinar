@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  /**
+   * The ads brief named `/ai-webinar`; the page shipped at `/webinar`. Any ad or QR code
+   * already made with the first path lands on the second instead of a 404, query string
+   * (and so the UTM tags) intact.
+   */
+  async redirects() {
+    return [{ source: "/ai-webinar", destination: "/webinar", permanent: true }];
+  },
 };
 
 export default nextConfig;
