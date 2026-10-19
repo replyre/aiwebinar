@@ -33,3 +33,6 @@ scripts/.backup-*.json
 
 # Raw event capture — originals only, outputs live in public/assets/img/events.
 temp/
+
+# Upscaled webinar photo sources — outputs live in public/assets/img/webinar.
+source-assets/webinar/
